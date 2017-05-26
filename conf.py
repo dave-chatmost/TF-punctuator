@@ -1,18 +1,3 @@
-class DataConf(object):
-    def _get_punctuations(punct_vocab_file):
-        with open(punct_vocab_file, 'r') as f:
-            punctuations = {w.strip('\n'): i for (i, w) in enumerate(f)}
-        return punctuations
-
-    punct_vocab_file = "punct_vocab"
-    punctuations = _get_punctuations(punct_vocab_file=punct_vocab_file)
-    vocabulary_file = "vocab" # relative path to raw_data_path
-    train_data = "train.txt" # relative path to raw_data_path
-    valid_data = "valid.txt" # relative path to raw_data_path
-    test_data = "test.txt" # relative path to raw_data_path
-    vocab_size = 100000
-
-
 class SmallConfig(object):
     """Small config."""
     init_scale = 0.1 # scale to initialize LSTM weights
@@ -26,9 +11,10 @@ class SmallConfig(object):
     max_max_epoch = 10
     keep_prob = 1.0
     lr_decay = 0.5
-    batch_size = 256
+    batch_size = 512
     vocab_size = 100000 + 2
     punc_size = 5
+    train_data_len = 42603942 # TODO
 
 class SmallConfig2(object):
     """Small config."""

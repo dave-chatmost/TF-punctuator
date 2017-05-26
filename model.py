@@ -1,32 +1,70 @@
 import inspect
+import logging
+import time
+
+import numpy as np
 import tensorflow as tf
 
 
-class PTBModel(object):
-    """The PTB LSTM Model."""
+def run_epoch(session, model, eval_op=None, verbose=False):
+    """Runs the model on the given data."""
+    start_time = time.time()
+    costs = 0.0
+    iters = 0
+    state = session.run(model.initial_state)
+    predicts = []
 
-    def __init__(self, is_training, config, input_, inputs, labels):
-        self._input = input_
-        self._qr = input_.qr
+    fetches = {
+        "cost": model.cost,
+        "final_state": model.final_state,
+        "logits": model.logits
+    }
+    if eval_op is not None:
+        fetches["eval_op"] = eval_op
 
-        batch_size = input_.batch_size
-        num_steps = input_.num_steps
+    logging.info(model.epoch_size) 
+    for step in range(model.epoch_size):
+        feed_dict = {}
+        for i, (c, h) in enumerate(model.initial_state):
+            feed_dict[c] = state[i].c
+            feed_dict[h] = state[i].h 
+        
+        vals = session.run(fetches, feed_dict)
+        cost = vals["cost"]
+        state = vals["final_state"]
+        if eval_op is None:
+            predict = vals["logits"]
+            predicts.extend(np.argmax(predict, 1).tolist())
+
+        costs += cost
+        iters += model.num_steps
+
+        if verbose and step % (model.epoch_size // 100) == 10:
+            logging.info("%.3f perplexity: %.3f speed: %.0f wps" %
+                  (step * 1.0 / model.epoch_size, np.exp(costs / iters),
+                   iters * model.batch_size / (time.time() - start_time)))
+
+    # Make the predicts right format
+    predicts = np.concatenate(
+        np.array(predicts).reshape([-1, model.batch_size]).T,
+        axis=0).tolist()
+    return np.exp(costs / iters), predicts
+
+
+class LSTMModel(object):
+    """The Punctuation Prediction LSTM Model."""
+
+    def __init__(self, input_batch, label_batch, is_training, config):
+        self.batch_size = batch_size = config.batch_size
+        self.num_steps = num_steps = config.num_steps
+        self.epoch_size = config.train_data_len // batch_size // num_steps
+
         hidden_size = config.hidden_size
         num_proj = config.num_proj
         vocab_size = config.vocab_size
         punc_size = config.punc_size
 
         # Set LSTM cell
-        def basic_lstm_cell():
-            if 'reuse' in inspect.getargspec(
-                    tf.contrib.rnn.BasicLSTMCell.__init__).args:
-                return tf.contrib.rnn.BasicLSTMCell(
-                    hidden_size, forget_bias=0.0, state_is_tuple=True,
-                    reuse=tf.get_variable_scope().reuse)
-            else:
-                return tf.contrib.rnn.BasicLSTMCell(
-                    hidden_size, forget_bias=0.0, state_is_tuple=True)
-
         def lstm_cell():
             if 'reuse' in inspect.getargspec(
                     tf.contrib.rnn.BasicLSTMCell.__init__).args:
@@ -36,7 +74,6 @@ class PTBModel(object):
                     reuse=tf.get_variable_scope().reuse)
 
         attn_cell = lstm_cell
-        # attn_cell = basic_lstm_cell
         if is_training and config.keep_prob < 1:
             def attn_cell():
                 return tf.contrib.rnn.DropoutWrapper(
@@ -51,7 +88,7 @@ class PTBModel(object):
         with tf.device("/cpu:0"):
             embedding = tf.get_variable(
                 "embedding", [vocab_size, hidden_size], dtype=tf.float32)
-            inputs = tf.nn.embedding_lookup(embedding, input_.input_data)
+            inputs = tf.nn.embedding_lookup(embedding, input_batch)
         
         if is_training and config.keep_prob < 1:
             inputs = tf.nn.dropout(inputs, config.keep_prob)
@@ -77,7 +114,7 @@ class PTBModel(object):
         self._logits = tf.nn.softmax(logits)
         loss = tf.contrib.legacy_seq2seq.sequence_loss_by_example(
             [logits],
-            [tf.reshape(input_.targets, [-1])],
+            [tf.reshape(label_batch, [-1])],
             [tf.ones([batch_size * num_steps], dtype=tf.float32)])
         self._cost = cost = tf.reduce_sum(loss) / batch_size
         self._final_state = state
@@ -103,10 +140,6 @@ class PTBModel(object):
         session.run(self._lr_update, feed_dict={self._new_lr: lr_value})
 
     @property
-    def input(self):
-        return self._input
-
-    @property
     def initial_state(self):
         return self._initial_state
 
@@ -126,3 +159,6 @@ class PTBModel(object):
     def train_op(self):
         return self._train_op
 
+    @property
+    def logits(self):
+        return self._logits

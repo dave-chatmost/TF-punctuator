@@ -1,8 +1,9 @@
 import collections
 import os
+import pickle
+
 import numpy as np
 import tensorflow as tf
-import pickle
 
 flags = tf.app.flags
 flags.DEFINE_string("data_dir", "../punc_data",

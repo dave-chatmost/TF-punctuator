@@ -1,5 +1,7 @@
 import os
-import tensorflow as tf 
+
+import tensorflow as tf
+
 
 def inputs(data_dir, batch_size=1, shuffle=False, tfrecords_format="tfrecords-*"):
     """Construct input and label for punctuation prediction.
@@ -33,15 +35,15 @@ def inputs(data_dir, batch_size=1, shuffle=False, tfrecords_format="tfrecords-*"
     label = tf.cast(features["labels"], tf.int32)
 
     min_after_dequeue = 1000
-    capacity = min_after_dequeue + 20 * batch_size
-
+    capacity = 10000 + min_after_dequeue + 20 * batch_size
+    num_threads = 16
     if shuffle:
         input_batch, label_batch = tf.train.shuffle_batch(
-            [input, label], batch_size=batch_size, num_threads=8, 
+            [input, label], batch_size=batch_size, num_threads=num_threads, 
             capacity=capacity, min_after_dequeue=min_after_dequeue)
     else:
         input_batch, label_batch = tf.train.batch(
-            [input, label], batch_size=batch_size, num_threads=8, 
+            [input, label], batch_size=batch_size, num_threads=num_threads, 
             capacity=capacity)
 
     return input_batch, label_batch, files
