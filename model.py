@@ -5,7 +5,7 @@ import tensorflow as tf
 class PTBModel(object):
     """The PTB LSTM Model."""
 
-    def __init__(self, is_training, config, input_):
+    def __init__(self, is_training, config, input_, inputs, labels):
         self._input = input_
         self._qr = input_.qr
 

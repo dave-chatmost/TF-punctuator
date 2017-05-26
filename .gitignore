@@ -2,3 +2,4 @@ __pycache__
 log/
 old_log/*
 predict.txt
+data_test/

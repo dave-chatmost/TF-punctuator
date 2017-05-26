@@ -45,6 +45,7 @@ class PTBInput(object):
         # self.epoch_size = ((len(data) // batch_size) - 1) // num_steps # the output of LM is shift by 1, so minus 1
         # ********* IO ********** #
         # print("[DEBUG]", self.batch_size, self.num_steps, self.epoch_size, len(data), len(data["inputs"]))
+        # Modify here to punc_input.py
         self.input_data, self.targets, self.qr = reader.batch_producer(
             data, batch_size, num_steps, name=name)
 
