@@ -1,3 +1,20 @@
+def get_config(model):
+    if model == "small":
+        return SmallConfig()
+    if model == "small2":
+        return SmallConfig2()
+    if model == "small3":
+        return SmallConfig3()
+    elif model == "medium":
+        return MediumConifg()
+    elif model == "large":
+        return LargeConfig()
+    elif model == "test":
+        return TestConfig()
+    else:
+        raise ValueError("Invalid model: %s", model)
+
+
 class SmallConfig(object):
     """Small config."""
     init_scale = 0.1 # scale to initialize LSTM weights

@@ -30,32 +30,15 @@ logging.basicConfig(filename=FLAGS.log, filemode='w',
                     format='[%(levelname)s %(asctime)s] %(message)s')
 
 
-def get_config():
-    if FLAGS.model == "small":
-        return SmallConfig()
-    if FLAGS.model == "small2":
-        return SmallConfig2()
-    if FLAGS.model == "small3":
-        return SmallConfig3()
-    elif FLAGS.model == "medium":
-        return MediumConifg()
-    elif FLAGS.model == "large":
-        return LargeConfig()
-    elif FLAGS.model == "test":
-        return TestConfig()
-    else:
-        raise ValueError("Invalid model: %s", FLAGS.model)
-
-
 def train():
     """ Train Punctuator for a number of epochs."""
-    config = get_config()
+    config = get_config(FLAGS.model)
     with tf.Graph().as_default():
         initializer = tf.random_uniform_initializer(
             -config.init_scale, config.init_scale)
 
         input_batch, label_batch, files = punc_input.inputs(os.path.join(FLAGS.data_path, "data/train"),
-                                                            batch_size=config.batch_size)
+                                                            batch_size=config.batch_size, shuffle=True)
 
         with tf.variable_scope("Model", reuse=None, initializer=initializer):
             m = LSTMModel(input_batch=input_batch, label_batch=label_batch,
@@ -72,7 +55,7 @@ def train():
                 m.assign_lr(session, config.learning_rate * lr_decay)
                 logging.info("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(m.lr)))
 
-                train_perplexity, _ = run_epoch(session, m, eval_op=m.train_op, verbose=True)
+                train_perplexity = run_epoch(session, m, eval_op=m.train_op, verbose=True)
                 logging.info("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
 
             coord.request_stop()

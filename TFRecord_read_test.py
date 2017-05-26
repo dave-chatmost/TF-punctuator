@@ -1,4 +1,4 @@
-import tensorflow as tf 
+import tensorflow as tf
 
 MATCH_FORMAT = "./data_test/train.tfrecords-*"
 files = tf.train.match_filenames_once(MATCH_FORMAT)

@@ -3,7 +3,7 @@ import os
 import tensorflow as tf
 
 
-def inputs(data_dir, batch_size=1, shuffle=False, tfrecords_format="tfrecords-*"):
+def inputs(data_dir, batch_size=1, shuffle=False, is_train=True, tfrecords_format="tfrecords-*"):
     """Construct input and label for punctuation prediction.
 
     Args:
@@ -45,5 +45,9 @@ def inputs(data_dir, batch_size=1, shuffle=False, tfrecords_format="tfrecords-*"
         input_batch, label_batch = tf.train.batch(
             [input, label], batch_size=batch_size, num_threads=num_threads, 
             capacity=capacity)
+
+    if not is_train:
+        input_batch = tf.reshape(input_batch, [-1, 1])
+        label_batch = tf.reshape(label_batch, [-1, 1])
 
     return input_batch, label_batch, files

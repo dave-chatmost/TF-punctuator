@@ -44,11 +44,14 @@ def run_epoch(session, model, eval_op=None, verbose=False):
                   (step * 1.0 / model.epoch_size, np.exp(costs / iters),
                    iters * model.batch_size / (time.time() - start_time)))
 
-    # Make the predicts right format
-    predicts = np.concatenate(
-        np.array(predicts).reshape([-1, model.batch_size]).T,
-        axis=0).tolist()
-    return np.exp(costs / iters), predicts
+    if eval_op is None:
+        # Make the predicts right format
+        # predicts = np.concatenate(
+        #     np.array(predicts).reshape([-1, model.batch_size]).T,
+        #     axis=0).tolist()
+        return np.exp(costs / iters), predicts
+    else:
+        return np.exp(costs / iters)
 
 
 class LSTMModel(object):
