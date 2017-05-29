@@ -28,7 +28,7 @@ class SmallConfig(object):
     max_max_epoch = 10
     keep_prob = 1.0
     lr_decay = 0.5
-    batch_size = 512
+    batch_size = 256
     vocab_size = 100000 + 2
     punc_size = 5
     train_data_len = 42603942 # TODO
@@ -44,7 +44,7 @@ class SmallConfig2(object):
     num_proj = 100
     max_epoch = 4
     max_max_epoch = 10
-    keep_prob = 1.0
+    keep_prob = 0.7
     lr_decay = 0.5
     batch_size = 256
     vocab_size = 100000 + 2

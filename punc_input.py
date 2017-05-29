@@ -31,8 +31,10 @@ def inputs(data_dir, batch_size=1, shuffle=False, is_train=True, tfrecords_forma
             "labels": tf.FixedLenFeature([20], tf.int64),
         })
 
-    input = tf.cast(features["inputs"], tf.int32)
-    label = tf.cast(features["labels"], tf.int32)
+    # input = tf.cast(features["inputs"], tf.int32)
+    # label = tf.cast(features["labels"], tf.int32)
+    input = features["inputs"]
+    label = features["labels"]
 
     min_after_dequeue = 1000
     capacity = 10000 + min_after_dequeue + 20 * batch_size
