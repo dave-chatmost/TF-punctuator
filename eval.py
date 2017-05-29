@@ -36,6 +36,7 @@ def evaluate():
     """Evaluate punctuator."""
     config = get_config(FLAGS.model)
     config.num_steps = 1
+    config.batch_size = 250
     config.train_data_len = 6673135 # TODO
 
     with tf.Graph().as_default():
@@ -43,17 +44,18 @@ def evaluate():
             -config.init_scale, config.init_scale)
 
         # NOTE: The num_steps is fixed as 20 in punc_input.inputs()
-        config.batch_size = 200
         input_batch, label_batch, files = punc_input.inputs(os.path.join(FLAGS.data_path, "data/test"),
-                                                            batch_size=config.batch_size, is_train=False)
+                                                            num_steps=config.num_steps,
+                                                            batch_size=config.batch_size)
 
-        config.batch_size = 200 * 20
         with tf.variable_scope("Model", reuse=None, initializer=initializer):
             mtest = LSTMModel(input_batch=input_batch, label_batch=label_batch,
                               is_training=False, config=config)
 
         sv = tf.train.Supervisor()
         with sv.managed_session() as session:
+            logging.info(session.run(files))
+
             ckpt = tf.train.get_checkpoint_state(FLAGS.save_path)
             if ckpt and ckpt.model_checkpoint_path:
                 logging.info("Model checkpoint file path: " + ckpt.model_checkpoint_path)

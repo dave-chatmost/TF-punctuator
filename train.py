@@ -38,7 +38,8 @@ def train():
             -config.init_scale, config.init_scale)
 
         input_batch, label_batch, files = punc_input.inputs(os.path.join(FLAGS.data_path, "data/train"),
-                                                            batch_size=config.batch_size, shuffle=True)
+                                                            num_steps=config.num_steps,
+                                                            batch_size=config.batch_size)
 
         with tf.variable_scope("Model", reuse=None, initializer=initializer):
             m = LSTMModel(input_batch=input_batch, label_batch=label_batch,

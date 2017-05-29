@@ -9,7 +9,8 @@ flags.DEFINE_string("data_dir", "../punc_data/data",
                     """Directory where exists text dataset""")
 FLAGS = flags.FLAGS
 
-input_batch, label_batch, files = punc_input.inputs(os.path.join(FLAGS.data_dir, "train"), batch_size=3)
+input_batch, label_batch, files = punc_input.inputs(os.path.join(FLAGS.data_dir, "train"),
+                                                    num_steps=20, batch_size=2)
 
 with tf.Session() as sess:
     # Required by tf.train.match_filenames_once()

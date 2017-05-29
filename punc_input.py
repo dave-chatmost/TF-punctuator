@@ -3,13 +3,13 @@ import os
 import tensorflow as tf
 
 
-def inputs(data_dir, batch_size=1, shuffle=False, is_train=True, tfrecords_format="tfrecords-*"):
+def inputs(data_dir, num_steps=20, batch_size=1, tfrecords_format="tfrecords-*"):
     """Construct input and label for punctuation prediction.
 
     Args:
         data_dir:
+        num_steps:
         batch_size:
-        shuffle:
 
     Returns:
         input_batch: tensor of [batch_size, num_steps] 
@@ -23,33 +23,37 @@ def inputs(data_dir, batch_size=1, shuffle=False, is_train=True, tfrecords_forma
     reader = tf.TFRecordReader()
     _, serialized_example = reader.read(filename_queue)
 
-    # 20 is BPTT steps in LSTM, I just set it fixed number now.
+    EXAMPLES_PER_FILE = 500000
     features = tf.parse_single_example(
         serialized_example,
         features={
-            "inputs": tf.FixedLenFeature([20], tf.int64),
-            "labels": tf.FixedLenFeature([20], tf.int64),
+            "inputs": tf.FixedLenFeature([EXAMPLES_PER_FILE], tf.int64),
+            "labels": tf.FixedLenFeature([EXAMPLES_PER_FILE], tf.int64),
         })
 
-    # input = tf.cast(features["inputs"], tf.int32)
-    # label = tf.cast(features["labels"], tf.int32)
     input = features["inputs"]
     label = features["labels"]
 
-    min_after_dequeue = 1000
-    capacity = 10000 + min_after_dequeue + 20 * batch_size
-    num_threads = 16
-    if shuffle:
-        input_batch, label_batch = tf.train.shuffle_batch(
-            [input, label], batch_size=batch_size, num_threads=num_threads, 
-            capacity=capacity, min_after_dequeue=min_after_dequeue)
-    else:
-        input_batch, label_batch = tf.train.batch(
-            [input, label], batch_size=batch_size, num_threads=num_threads, 
-            capacity=capacity)
+    data_len = tf.size(input)
+    batch_len = tf.to_int32(data_len / batch_size)
 
-    if not is_train:
-        input_batch = tf.reshape(input_batch, [-1, 1])
-        label_batch = tf.reshape(label_batch, [-1, 1])
+    input_data = tf.transpose(
+                    tf.reshape(
+                        tf.slice(input, [0], [batch_size * batch_len]), 
+                        [batch_size, batch_len]))
+    label_data = tf.transpose(
+                    tf.reshape(
+                        tf.slice(label, [0], [batch_size * batch_len]), 
+                        [batch_size, batch_len]))
+
+    num_threads = 16
+    capacity = 10000 + 20 * batch_size
+
+    input_batch, label_batch = tf.train.batch(
+        [input_data, label_data], batch_size=num_steps, num_threads=num_threads, 
+        capacity=capacity, enqueue_many=True, shapes=[[batch_size], [batch_size]])
+
+    input_batch = tf.transpose(input_batch)
+    label_batch = tf.transpose(label_batch)
 
     return input_batch, label_batch, files

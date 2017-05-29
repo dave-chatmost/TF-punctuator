@@ -98,23 +98,18 @@ def convert_file(file_path, vocabulary, punctuations, output_path):
     with open(output_path+".pkl", 'wb') as output_file:
         pickle.dump(data, output_file, protocol=pickle.HIGHEST_PROTOCOL)
 
-    EXAMPLES_PER_FILE = 20000000 #2000W
-    NUM_FILES = int(np.ceil(len(inputs)/EXAMPLES_PER_FILE))
-    EXAMPLES_PER_FEATURE = 20 # num_steps
-    NUM_FEATURES = EXAMPLES_PER_FILE // EXAMPLES_PER_FEATURE # Make sure divisible
+    EXAMPLES_PER_FILE = 500000 #TODO: Make it an parameter
+    NUM_FILES = int(np.floor(len(inputs)/EXAMPLES_PER_FILE))
     for i in range(NUM_FILES):
         filename = os.path.join(output_path,  "tfrecords-%.5d-of-%.5d" % (i+1, NUM_FILES))
         writer = tf.python_io.TFRecordWriter(filename)
-        print("Writing " + filename)
-        for j in range(NUM_FEATURES):
-            if i*EXAMPLES_PER_FILE + (j+1)*EXAMPLES_PER_FEATURE > len(inputs):
-                break
-            input = inputs[i*EXAMPLES_PER_FILE + j*EXAMPLES_PER_FEATURE : i*EXAMPLES_PER_FILE + (j+1)*EXAMPLES_PER_FEATURE]
-            label = outputs[i*EXAMPLES_PER_FILE + j*EXAMPLES_PER_FEATURE : i*EXAMPLES_PER_FILE + (j+1)*EXAMPLES_PER_FEATURE]
-            example = tf.train.Example(features=tf.train.Features(feature={
-                "inputs": _int64_feature(input),
-                "labels": _int64_feature(label)}))
-            writer.write(example.SerializeToString())
+        input = inputs[i*EXAMPLES_PER_FILE : (i+1)*EXAMPLES_PER_FILE]
+        label = outputs[i*EXAMPLES_PER_FILE : (i+1)*EXAMPLES_PER_FILE]
+        print("Writing " + filename + " with length of " + str(len(input)) + " data.")
+        example = tf.train.Example(features=tf.train.Features(feature={
+            "inputs": _int64_feature(input),
+            "labels": _int64_feature(label)}))
+        writer.write(example.SerializeToString())
         writer.close()
     print("Converting Successfully.")
 

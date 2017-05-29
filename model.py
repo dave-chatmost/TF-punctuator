@@ -60,7 +60,7 @@ class LSTMModel(object):
     def __init__(self, input_batch, label_batch, is_training, config):
         self.batch_size = batch_size = config.batch_size
         self.num_steps = num_steps = config.num_steps
-        self.epoch_size = config.train_data_len // batch_size // num_steps
+        self.epoch_size = (config.train_data_len // 500000)*500000 // batch_size // num_steps
 
         hidden_size = config.hidden_size
         num_proj = config.num_proj
