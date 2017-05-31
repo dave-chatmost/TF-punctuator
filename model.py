@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 
 
-def run_epoch(session, model, eval_op=None, verbose=False):
+def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1):
     """Runs the model on the given data."""
     start_time = time.time()
     costs = 0.0
@@ -22,8 +22,8 @@ def run_epoch(session, model, eval_op=None, verbose=False):
     if eval_op is not None:
         fetches["eval_op"] = eval_op
 
-    logging.info(model.epoch_size) 
-    for step in range(model.epoch_size):
+    logging.info(epoch_size) 
+    for step in range(epoch_size):
         feed_dict = {}
         for i, (c, h) in enumerate(model.initial_state):
             feed_dict[c] = state[i].c
@@ -39,17 +39,18 @@ def run_epoch(session, model, eval_op=None, verbose=False):
         costs += cost
         iters += model.num_steps
 
-        if verbose and step % (model.epoch_size // 100) == 10:
+        if verbose and step % (epoch_size // 100) == 10:
             logging.info("%.3f perplexity: %.3f speed: %.0f wps" %
-                  (step * 1.0 / model.epoch_size, np.exp(costs / iters),
+                  (step * 1.0 / epoch_size, np.exp(costs / iters),
                    iters * model.batch_size / (time.time() - start_time)))
 
+    # Make the predicts right format
+    final_predicts = np.concatenate(
+        np.array(predicts).reshape([-1, model.batch_size]).T,
+        axis=0
+        ).tolist()
     if eval_op is None:
-        # Make the predicts right format
-        # predicts = np.concatenate(
-        #     np.array(predicts).reshape([-1, model.batch_size]).T,
-        #     axis=0).tolist()
-        return np.exp(costs / iters), predicts
+        return np.exp(costs / iters), final_predicts
     else:
         return np.exp(costs / iters)
 
@@ -60,7 +61,6 @@ class LSTMModel(object):
     def __init__(self, input_batch, label_batch, is_training, config):
         self.batch_size = batch_size = config.batch_size
         self.num_steps = num_steps = config.num_steps
-        self.epoch_size = (config.train_data_len // 500000)*500000 // batch_size // num_steps
 
         hidden_size = config.hidden_size
         num_proj = config.num_proj

@@ -2,9 +2,9 @@ def get_config(model):
     if model == "small":
         return SmallConfig()
     if model == "small2":
-        return SmallConfig2()
+        return Small2Config()
     if model == "small3":
-        return SmallConfig3()
+        return Small3Config()
     elif model == "medium":
         return MediumConifg()
     elif model == "large":
@@ -33,7 +33,7 @@ class SmallConfig(object):
     punc_size = 5
     train_data_len = 42603942 # TODO
 
-class SmallConfig2(object):
+class Small2Config(object):
     """Small config."""
     init_scale = 0.1 # scale to initialize LSTM weights
     learning_rate = 0.1
@@ -44,13 +44,13 @@ class SmallConfig2(object):
     num_proj = 100
     max_epoch = 4
     max_max_epoch = 10
-    keep_prob = 0.7
+    keep_prob = 1.0
     lr_decay = 0.5
     batch_size = 256
     vocab_size = 100000 + 2
     punc_size = 5
 
-class SmallConfig3(object):
+class Small3Config(object):
     """Small config."""
     init_scale = 0.1 # scale to initialize LSTM weights
     learning_rate = 0.1

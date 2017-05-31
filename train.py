@@ -51,12 +51,14 @@ def train():
 
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=session, coord=coord)
+            epoch_size = punc_input.get_epoch_size(FLAGS.data_path + "/data/train.pkl",
+                                                   config.batch_size, config.num_steps)
             for i in range(config.max_max_epoch):
                 lr_decay = config.lr_decay ** max(i + 1 - config.max_epoch, 0.0)
                 m.assign_lr(session, config.learning_rate * lr_decay)
                 logging.info("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(m.lr)))
 
-                train_perplexity = run_epoch(session, m, eval_op=m.train_op, verbose=True)
+                train_perplexity = run_epoch(session, m, eval_op=m.train_op, verbose=True, epoch_size=epoch_size)
                 logging.info("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
 
             coord.request_stop()

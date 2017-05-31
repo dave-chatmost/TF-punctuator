@@ -1,5 +1,6 @@
 __pycache__
+*log
 log/
 old_log/*
-predict.txt
 data_test/
+nohup.out
