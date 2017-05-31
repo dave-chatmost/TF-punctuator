@@ -7,6 +7,7 @@ from sklearn.metrics import precision_recall_fscore_support as score
 from sklearn.metrics import accuracy_score
 
 import punc_input
+import utils
 from conf import *
 from model import *
 
@@ -51,6 +52,8 @@ def evaluate():
 
         sv = tf.train.Supervisor()
         with sv.managed_session() as session:
+            logging.info("Number of parameters: {}".format(utils.count_number_trainable_params()))
+
             ckpt = tf.train.get_checkpoint_state(FLAGS.save_path)
             if ckpt and ckpt.model_checkpoint_path:
                 logging.info("Model checkpoint file path: " + ckpt.model_checkpoint_path)
