@@ -12,7 +12,7 @@ def count_number_trainable_params():
     tot_nb_params = 0
     for trainable_variable in tf.trainable_variables():
         shape = trainable_variable.get_shape() # e.g [D,F] or [W,H,C]
-        #print(shape)
+        print(shape)
         current_nb_params = get_nb_params_shape(shape)
         tot_nb_params = tot_nb_params + current_nb_params
     return tot_nb_params

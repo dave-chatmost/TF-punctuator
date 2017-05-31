@@ -5,6 +5,7 @@ import numpy as np
 import tensorflow as tf
 
 import punc_input
+import utils
 from conf import *
 from model import *
 
@@ -47,6 +48,7 @@ def train():
 
         sv = tf.train.Supervisor(logdir=FLAGS.save_path)
         with sv.managed_session() as session:
+            logging.info("Number of parameters: {}".format(utils.count_number_trainable_params()))
             logging.info(session.run(files))
 
             coord = tf.train.Coordinator()

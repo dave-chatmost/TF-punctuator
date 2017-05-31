@@ -61,6 +61,7 @@ class LSTMModel(object):
         self.batch_size = batch_size = config.batch_size
         self.num_steps = num_steps = config.num_steps
 
+        embedding_size = config.embedding_size
         hidden_size = config.hidden_size
         num_proj = config.num_proj
         vocab_size = config.vocab_size
@@ -89,7 +90,7 @@ class LSTMModel(object):
         # Embedding part
         with tf.device("/cpu:0"):
             embedding = tf.get_variable(
-                "embedding", [vocab_size, hidden_size], dtype=tf.float32)
+                "embedding", [vocab_size, embedding_size], dtype=tf.float32)
             inputs = tf.nn.embedding_lookup(embedding, input_batch)
         
         if is_training and config.keep_prob < 1:

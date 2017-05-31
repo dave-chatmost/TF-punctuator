@@ -1,12 +1,16 @@
 def get_config(model):
     if model == "small":
         return SmallConfig()
-    if model == "small2":
+    elif model == "small2":
         return Small2Config()
-    if model == "small3":
+    elif model == "small3":
         return Small3Config()
-    elif model == "medium":
-        return MediumConifg()
+    elif model == "small4":
+        return Small4Config()
+    elif model == "small5":
+        return Small5Config()
+    elif model == "medium3":
+        return Medium3Conifg()
     elif model == "large":
         return LargeConfig()
     elif model == "test":
@@ -22,6 +26,7 @@ class SmallConfig(object):
     max_grad_norm = 5
     num_layers = 1
     num_steps = 20
+    embedding_size = 100
     hidden_size = 100
     num_proj = 100
     max_epoch = 4
@@ -31,7 +36,6 @@ class SmallConfig(object):
     batch_size = 256
     vocab_size = 100000 + 2
     punc_size = 5
-    train_data_len = 42603942 # TODO
 
 class Small2Config(object):
     """Small config."""
@@ -40,6 +44,7 @@ class Small2Config(object):
     max_grad_norm = 5
     num_layers = 2 # NOTE HERE
     num_steps = 20
+    embedding_size = 100
     hidden_size = 100
     num_proj = 100
     max_epoch = 4
@@ -57,6 +62,43 @@ class Small3Config(object):
     max_grad_norm = 5
     num_layers = 3 # NOTE HERE
     num_steps = 20
+    embedding_size = 100
+    hidden_size = 100
+    num_proj = 100
+    max_epoch = 4
+    max_max_epoch = 10
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 256
+    vocab_size = 100000 + 2
+    punc_size = 5
+
+class Small4Config(object):
+    """Small config. Compared with SmallConfig."""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 1
+    num_steps = 20
+    embedding_size = 50 # NOTE HERE
+    hidden_size = 100
+    num_proj = 100
+    max_epoch = 4
+    max_max_epoch = 10
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 256
+    vocab_size = 100000 + 2
+    punc_size = 5
+
+class Small5Config(object):
+    """Small config. Compared with SmallConfig."""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 1
+    num_steps = 20
+    embedding_size = 150 # NOTE HERE
     hidden_size = 100
     num_proj = 100
     max_epoch = 4
@@ -68,21 +110,23 @@ class Small3Config(object):
     punc_size = 5
 
 
-
-class MediumConifg(object):
+class Medium3Conifg(object):
     """Medium config."""
     init_scale = 0.05 # scale to initialize LSTM weights
-    learning_rate = 1.0
+    learning_rate = 0.1
     max_grad_norm = 5
-    num_layers = 2
-    num_steps = 35
-    hidden_size = 650
-    max_epoch = 6
-    max_max_epoch = 39
+    num_layers = 3
+    num_steps = 20
+    embedding_size = 100
+    hidden_size = 100
+    num_proj = 100
+    max_epoch = 4
+    max_max_epoch = 10
     keep_prob = 0.5
-    lr_decay = 0.8
-    batch_size = 20
-    vocab_size = 10000
+    lr_decay = 0.5
+    batch_size = 256
+    vocab_size = 100000 + 2
+    punc_size = 5
 
 
 class LargeConfig(object):
