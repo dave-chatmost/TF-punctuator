@@ -44,12 +44,11 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1):
                   (step * 1.0 / epoch_size, np.exp(costs / iters),
                    iters * model.batch_size / (time.time() - start_time)))
 
-    # Make the predicts right format
-    final_predicts = np.concatenate(
-        np.array(predicts).reshape([-1, model.batch_size]).T,
-        axis=0
-        ).tolist()
     if eval_op is None:
+        # Make the predicts right format
+        final_predicts = np.concatenate(
+            np.array(predicts).reshape([-1, model.batch_size]).T,
+            axis=0).tolist()
         return np.exp(costs / iters), final_predicts
     else:
         return np.exp(costs / iters)
