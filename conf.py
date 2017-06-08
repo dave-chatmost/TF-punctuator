@@ -9,6 +9,26 @@ def get_config(model):
         return Small4Config()
     elif model == "small5":
         return Small5Config()
+    elif model == "small6":
+        return Small6Config()
+    elif model == "small7":
+        return Small7Config()
+    elif model == "small8":
+        return Small8Config()
+    elif model == "hid1":
+        return Hidden1Config()
+    elif model == "hid2":
+        return Hidden2Config()
+    elif model == "hid3":
+        return Hidden3Config()
+    elif model == "hid4":
+        return Hidden4Config()
+    elif model == "hid5":
+        return Hidden5Config()
+    elif model == "hid6":
+        return Hidden6Config()
+    elif model == "hid7":
+        return Hidden7Config()
     elif model == "medium3":
         return Medium3Conifg()
     elif model == "large":
@@ -17,6 +37,133 @@ def get_config(model):
         return TestConfig()
     else:
         raise ValueError("Invalid model: %s", model)
+
+
+class Hidden1Config(object):
+    """Hidden config."""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 3
+    num_steps = 20
+    embedding_size = 150
+    hidden_size = 100 # NOTE HERE
+    num_proj = 100
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 100000 + 2
+    punc_size = 5
+
+class Hidden2Config(object):
+    """Hidden config."""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 3
+    num_steps = 20
+    embedding_size = 150
+    hidden_size = 128 # NOTE HERE
+    num_proj = 100
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 100000 + 2
+    punc_size = 5
+
+class Hidden3Config(object):
+    """Hidden config."""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 3
+    num_steps = 20
+    embedding_size = 150
+    hidden_size = 256 # NOTE HERE
+    num_proj = 100
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 100000 + 2
+    punc_size = 5
+
+class Hidden4Config(object):
+    """Hidden config."""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 3
+    num_steps = 20
+    embedding_size = 150
+    hidden_size = 512 # NOTE HERE
+    num_proj = 100
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 100000 + 2
+    punc_size = 5
+
+class Hidden5Config(object):
+    """Hidden config."""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 3
+    num_steps = 20
+    embedding_size = 150
+    hidden_size = 1024 # NOTE HERE
+    num_proj = 100
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 100000 + 2
+    punc_size = 5
+
+class Hidden6Config(object):
+    """Hidden config."""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 3
+    num_steps = 20
+    embedding_size = 256 # NOTE HERE
+    hidden_size = 512 # NOTE HERE
+    num_proj = 100
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 100000 + 2
+    punc_size = 5
+
+class Hidden7Config(object):
+    """Hidden config."""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 3
+    num_steps = 20
+    embedding_size = 256 # NOTE HERE
+    hidden_size = 1024 # NOTE HERE
+    num_proj = 100
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 100000 + 2
+    punc_size = 5
 
 
 class SmallConfig(object):
@@ -106,6 +253,60 @@ class Small5Config(object):
     keep_prob = 1.0
     lr_decay = 0.5
     batch_size = 256
+    vocab_size = 100000 + 2
+    punc_size = 5
+
+class Small6Config(object):
+    """Small config. Compare with SmallConfig()"""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 1
+    num_steps = 20
+    embedding_size = 100
+    hidden_size = 100
+    num_proj = 100
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 32 # NOTE HERE
+    vocab_size = 100000 + 2
+    punc_size = 5
+
+class Small7Config(object):
+    """Small config. Compare with SmallConfig()"""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 1
+    num_steps = 20
+    embedding_size = 100
+    hidden_size = 100
+    num_proj = 100
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 64 # NOTE HERE
+    vocab_size = 100000 + 2
+    punc_size = 5
+
+class Small8Config(object):
+    """Small config. Compare with SmallConfig()"""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 1
+    num_steps = 20
+    embedding_size = 100
+    hidden_size = 100
+    num_proj = 100
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 # NOTE HERE
     vocab_size = 100000 + 2
     punc_size = 5
 
