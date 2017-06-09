@@ -29,6 +29,8 @@ def get_config(model):
         return Hidden6Config()
     elif model == "hid7":
         return Hidden7Config()
+    elif model == "proj1":
+        return Proj1Config()
     elif model == "medium3":
         return Medium3Conifg()
     elif model == "large":
@@ -37,6 +39,25 @@ def get_config(model):
         return TestConfig()
     else:
         raise ValueError("Invalid model: %s", model)
+
+
+class Proj1Config(object):
+    """Projection config. Compared with Hidden7Config"""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 3
+    num_steps = 20
+    embedding_size = 256 
+    hidden_size = 1024 
+    num_proj = 256 # NOTE HERE
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 100000 + 2
+    punc_size = 5
 
 
 class Hidden1Config(object):
