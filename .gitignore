@@ -13,7 +13,5 @@ punc_data*
 data_test
 
 # tools
-vocab
-list
-test
-segment
+tools/wordseg/vocab
+tools/wordseg/list
