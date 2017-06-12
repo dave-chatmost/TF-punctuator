@@ -60,20 +60,25 @@ def inputs(data_dir, num_steps=20, batch_size=1, tfrecords_format="tfrecords-*")
     return input_batch, label_batch, files
 
 
-def eval_inputs(data_dir, batch_size=1):
+def eval_inputs(data_dir, batch_size=1, inputs=None, outputs=None):
     """Construct input and label for punctuation evaluation.
 
     Args:
         data_dir: the path of pickle file. 
         batch_size:
+        inputs/outputs: Used by punctuate_text_with_lstm.py, raw word id sequence.
 
     Returns:
         input_batch:
         label_batch:
     """
-    eval = np.load(data_dir)
-    eval_inputs = eval["inputs"]
-    eval_labels = eval["outputs"]
+    if inputs == None:
+        eval = np.load(data_dir)
+        eval_inputs = eval["inputs"]
+        eval_labels = eval["outputs"]
+    else:
+        eval_inputs = inputs
+        eval_labels = outputs
 
     eval_inputs = tf.convert_to_tensor(eval_inputs, name="eval_inputs", dtype=tf.int32)
     eval_labels = tf.convert_to_tensor(eval_labels, name="eval_labels", dtype=tf.int32)

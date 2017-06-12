@@ -39,6 +39,9 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1):
         costs += cost
         iters += model.num_steps
 
+        if epoch_size < 100:
+            verbose = False
+
         if verbose and step % (epoch_size // 100) == 10:
             logging.info("%.3f perplexity: %.3f speed: %.0f wps" %
                   (step * 1.0 / epoch_size, np.exp(costs / iters),

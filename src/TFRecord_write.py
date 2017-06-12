@@ -61,7 +61,7 @@ def words_to_ids(file_path, vocabulary, punctuations):
     inputs = []
     outputs = []
     punctuation = " "
-    print("[DEBUG]", punctuations)
+    # print("[DEBUG]", punctuations)
     
     with open(file_path, 'r') as corpus:
         for line in corpus:
