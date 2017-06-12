@@ -1,11 +1,16 @@
+exp
+
+# log
 __pycache__
 *log
-log/
-old_log/*
-data_test/
+log
+old_log
 nohup.out
+
+# data
+ngram_test_data
 punc_data*
-exp
+data_test
 
 # tools
 vocab

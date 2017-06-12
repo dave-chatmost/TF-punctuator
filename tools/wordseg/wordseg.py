@@ -64,6 +64,10 @@ def word_seg(text_file_list_file, dict_file, out_dir):
         return dict
     
     dictionary = _load_dict(dict_file)
+
+    if not os.path.exists(out_dir):
+        os.mkdir(out_dir)
+
     with open(text_file_list_file, 'r') as list:
         for file in list:
             file = file.strip()
@@ -78,14 +82,12 @@ def word_seg(text_file_list_file, dict_file, out_dir):
 
 
 if __name__ == "__main__":
-    if (len(sys.argv) < 3):
-        print("Usage: python wordseg.py <text-file-list-file> <dictionary-file>")
+    if (len(sys.argv) < 4):
+        print("Usage: python wordseg.py <text-file-list-file> <dictionary-file> <out-dir>")
         sys.exit(-1)
 
     text_file_list_file = sys.argv[1]
     dict_file = sys.argv[2]
-    out_dir = os.path.join(os.getcwd(), "segment")
-    if not os.path.exists(out_dir):
-        os.mkdir(out_dir)
+    out_dir = sys.argv[3]
 
     word_seg(text_file_list_file, dict_file, out_dir)
