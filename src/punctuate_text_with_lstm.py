@@ -88,7 +88,7 @@ def write_punctuations(input_file, predicts, punct_vocab_reverse_map, output_fil
                 # print(word, i)
                 punctuation = punct_vocab_reverse_map[predicts[i]]
                 if sentence_begin and not first_line:
-                    outf.write("%s\n%s" % (punctuation, word))
+                    outf.write(" %s\n%s" % (punctuation, word))
                     sentence_begin = False
                 elif punctuation == " ":
                     outf.write("%s%s" % (punctuation, word))

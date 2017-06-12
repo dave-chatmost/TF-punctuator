@@ -11,6 +11,7 @@ nohup.out
 ngram_test_data
 punc_data*
 data_test
+punctuated_text
 
 # tools
 tools/wordseg/vocab
