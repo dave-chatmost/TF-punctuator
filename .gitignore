@@ -4,3 +4,9 @@ log/
 old_log/*
 data_test/
 nohup.out
+punc_data*
+exp
+
+vocab
+list
+test
