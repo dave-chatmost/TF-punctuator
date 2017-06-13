@@ -2,23 +2,29 @@
 
 # Created on 2017-06-12
 # Author: Kaituo Xu (Sogou)
-# Function: Compute WER for listed hyp files.
+# Function: Compute WER for hyp files that match pattern.
 # NOTE: You need to download Kaldi at first, because
 #       we use kaldi utils: compute-wer.
 
-(
-cd ~/tools/kaldi/kaldi/egs/wsj/s5/
-. ./path.sh
-)
+if [ $# -le 2 ]; then
+  echo "Compute WER for hyp files that match pattern."
+  echo "Usage: $0 <ref-dir> <hyp-dir> <simple-file-pattern>"
+  echo "e.g.: $0 data/TN data/hyp asr_out"
+  exit 1
+fi
 
-REF_DIR=../ngram_test_data/TN
-HYP_DIR=../ngram_test_data/hyp
+REF_DIR=$1
+HYP_DIR=$2
+PATTERN=$3
 
-files=`ls $HYP_DIR/*asr_out*`
-for hyp in $files
-do
+# In order to use `compute-wer`
+
+cd ~/tools/kaldi/kaldi/egs/wsj/s5/; . ./path.sh; cd -
+
+files=`ls $HYP_DIR/*$PATTERN*`
+for hyp in $files; do
   echo -e "\n*****\nFILE: $hyp\n*****"
-  cor_ref=$REF_DIR/`basename ${hyp/asr_out/ref}`
+  cor_ref=$REF_DIR/`basename ${hyp/$PATTERN/ref}`
   cor_unpunc=$REF_DIR/`basename $hyp`
   # Add utt-id to per utterance
   awk '{ print NR "\t" $0 }' $hyp > temp_hyp
