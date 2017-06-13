@@ -17,7 +17,7 @@ OUTDIR=$2
 # TODO: when processing GBK file, there is a encoding problem.
 # source kaldi path.sh can solve this problem.
 # solve this problem later.
-cd ~/tools/kaldi/kaldi/egs/wsj/s5/; . ./path.sh; cd -
+export LC_ALL=C
 
 files=`ls $INDIR`
 for file in $files; do

@@ -18,7 +18,6 @@ HYP_DIR=$2
 PATTERN=$3
 
 # In order to use `compute-wer`
-
 cd ~/tools/kaldi/kaldi/egs/wsj/s5/; . ./path.sh; cd -
 
 files=`ls $HYP_DIR/*$PATTERN*`
