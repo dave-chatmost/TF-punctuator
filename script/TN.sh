@@ -23,8 +23,8 @@ files=`ls $INDIR`
 for file in $files; do
   echo "Processing $file"
   sed -e 's/[[:alnum:][:punct:]] //g' \
-  -e 's/[[:alnum:][:punct:]] *//g' \
-  -e '/^ *$/d' \
-  $INDIR/$file  > $OUTDIR/${file}_tn
+      -e 's/[[:alnum:][:punct:]] *//g' \
+      -e '/^ *$/d' \
+      $INDIR/$file  > $OUTDIR/${file}_tn
   echo "Put the result in " $OUTDIR/${file}_tn
 done
