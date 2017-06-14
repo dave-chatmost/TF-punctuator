@@ -23,6 +23,10 @@ def char_seg(in_dir, out_dir):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("Usage: python charseg.py <in-dir> <out-dir>")
+        sys.exit(-1)
+
     in_dir = sys.argv[1]
     out_dir = sys.argv[2]
     char_seg(in_dir, out_dir)
