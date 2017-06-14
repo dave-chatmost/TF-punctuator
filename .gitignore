@@ -14,5 +14,5 @@ data_test
 punctuated_text
 
 # tools
-tools/wordseg/vocab
-tools/wordseg/list
+tools/segment/vocab
+tools/segment/list
