@@ -23,6 +23,9 @@ flags.DEFINE_string("save_path", None,
 flags.DEFINE_string("log", "log",
     "Log filename."
 )
+flags.DEFINE_string("tblog", "tblog",
+    "Tensorboard log dir"
+)
 
 FLAGS = flags.FLAGS
 
@@ -55,13 +58,16 @@ def train():
             threads = tf.train.start_queue_runners(sess=session, coord=coord)
             epoch_size = punc_input.get_epoch_size(FLAGS.data_path + "/data/train.pkl",
                                                    config.batch_size, config.num_steps)
+            summary_writer = tf.summary.FileWriter(FLAGS.tblog, session.graph)
             for i in range(config.max_max_epoch):
                 lr_decay = config.lr_decay ** max(i + 1 - config.max_epoch, 0.0)
                 m.assign_lr(session, config.learning_rate * lr_decay)
                 logging.info("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(m.lr)))
 
-                train_perplexity = run_epoch(session, m, eval_op=m.train_op, verbose=True, epoch_size=epoch_size)
+                train_perplexity = run_epoch(session, m, eval_op=m.train_op, verbose=True,
+                                             epoch_size=epoch_size, summary_writer=summary_writer)
                 logging.info("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
+            summary_writer.close()
 
             coord.request_stop()
             coord.join(threads)
@@ -76,6 +82,9 @@ def main(argv=None):
     if tf.gfile.Exists(FLAGS.save_path):
         tf.gfile.DeleteRecursively(FLAGS.save_path)
     tf.gfile.MakeDirs(FLAGS.save_path)
+    if tf.gfile.Exists(FLAGS.tblog):
+        tf.gfile.DeleteRecursively(FLAGS.tblog)
+    tf.gfile.MakeDirs(FLAGS.tblog)
     train()
 
 

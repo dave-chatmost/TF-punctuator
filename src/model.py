@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 
 
-def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1):
+def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, summary_writer=None):
     """Runs the model on the given data."""
     start_time = time.time()
     costs = 0.0
@@ -17,7 +17,8 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1):
     fetches = {
         "cost": model.cost,
         "final_state": model.final_state,
-        "logits": model.logits
+        "logits": model.logits,
+        "merged": model.merged
     }
     if eval_op is not None:
         fetches["eval_op"] = eval_op
@@ -46,6 +47,8 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1):
             logging.info("%.3f perplexity: %.3f speed: %.0f wps" %
                   (step * 1.0 / epoch_size, np.exp(costs / iters),
                    iters * model.batch_size / (time.time() - start_time)))
+        merged = vals["merged"]
+        summary_writer.add_summary(merged, step)
 
     if eval_op is None:
         # Make the predicts right format
@@ -125,6 +128,9 @@ class LSTMModel(object):
         self._cost = cost = tf.reduce_sum(loss) / batch_size
         self._final_state = state
 
+        tf.summary.scalar("cross_entropy", cost)
+        self._merged = tf.summary.merge_all()
+
         if not is_training:
             return
 
@@ -168,3 +174,7 @@ class LSTMModel(object):
     @property
     def logits(self):
         return self._logits
+
+    @property
+    def merged(self):
+        return self._merged
