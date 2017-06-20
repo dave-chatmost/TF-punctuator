@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 
 
-def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, summary_writer=None):
+def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, summary_writer=None, num_gpus=1):
     """Runs the model on the given data."""
     start_time = time.time()
     costs = 0.0
@@ -23,7 +23,7 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, summary
     if eval_op is not None:
         fetches["eval_op"] = eval_op
 
-    logging.info(epoch_size) 
+    logging.info("Epoch size: %d" % epoch_size) 
     for step in range(epoch_size):
         feed_dict = {}
         for i, (c, h) in enumerate(model.initial_state):
@@ -46,9 +46,10 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, summary
         if verbose and step % (epoch_size // 100) == 10:
             logging.info("%.3f perplexity: %.3f speed: %.0f wps" %
                   (step * 1.0 / epoch_size, np.exp(costs / iters),
-                   iters * model.batch_size / (time.time() - start_time)))
+                   num_gpus * iters * model.batch_size / (time.time() - start_time)))
         merged = vals["merged"]
-        summary_writer.add_summary(merged, step)
+        if summary_writer:
+            summary_writer.add_summary(merged, step)
 
     if eval_op is None:
         # Make the predicts right format
@@ -136,7 +137,7 @@ class LSTMModel(object):
 
         self._lr = tf.Variable(0.0, trainable=False)
         tvars = tf.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(cost, tvars),
+        grads, _ = self._grads = tf.clip_by_global_norm(tf.gradients(cost, tvars),
                                           config.max_grad_norm)
         optimizer = tf.train.GradientDescentOptimizer(self._lr)
         self._train_op = optimizer.apply_gradients(
@@ -178,3 +179,7 @@ class LSTMModel(object):
     @property
     def merged(self):
         return self._merged
+
+    @property
+    def grads(self):
+        return self._grads
