@@ -47,8 +47,8 @@ def inputs(data_dir, num_steps=20, batch_size=1, tfrecords_format="tfrecords-*")
                         tf.slice(label, [0], [batch_size * batch_len]), 
                         [batch_size, batch_len]))
 
-    num_threads = 16
-    capacity = 10000 + 20 * batch_size
+    num_threads = 32
+    capacity = 20000 + 20 * batch_size
 
     input_batch, label_batch = tf.train.batch(
         [input_data, label_data], batch_size=num_steps, num_threads=num_threads, 

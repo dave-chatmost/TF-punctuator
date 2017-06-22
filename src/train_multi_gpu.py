@@ -85,13 +85,12 @@ def train():
         global_step = tf.get_variable(
             'global_step', [],
             initializer=tf.constant_initializer(0), trainable=False, dtype=tf.int32)
-        lr = tf.train.exponential_decay(config.learning_rate,
-                                        global_step,
-                                        epoch_size,
-                                        config.lr_decay,
-                                        staircase=True
-                                        )
+        lr = tf.Variable(0.0, trainable=False)
         opt = tf.train.GradientDescentOptimizer(lr)
+        new_lr = tf.placeholder(tf.float32, shape=[], name="new_learning_rate")
+        lr_update = tf.assign(lr, new_lr)
+        def assign_lr(session, lr_value):
+            session.run(lr_update, feed_dict={new_lr: lr_value})
 
         initializer = tf.random_uniform_initializer(
             -config.init_scale, config.init_scale)
@@ -104,26 +103,30 @@ def train():
         with tf.variable_scope("Model", reuse=None, initializer=initializer):
             for i in range(FLAGS.num_gpus):
                 with tf.device('/gpu:%d' % i):
-                    with tf.name_scope('GPU_%d' % i) as scope:
+                    with tf.name_scope('gpu_%d' % i) as scope:
                         m = LSTMModel(input_batch=input_batch, label_batch=label_batch,
                                       is_training=True, config=config)
+                        loss = m.cost
                         tf.get_variable_scope().reuse_variables()
-                        grads = opt.compute_gradients(m.cost)
+                        grads = opt.compute_gradients(loss)
                         tower_grads.append(grads)
+                        #tf.summary.scalar("Training Loss", m.cost)
 
-        grads = average_gradients(tower_grads)
+        with tf.device('/gpu:0'):
+            grads_and_tvars = average_gradients(tower_grads)
+            grads = []
+            tvars = []
+            for g, t in grads_and_tvars:
+                grads.append(g)
+                tvars.append(t)
+            grads, _ = tf.clip_by_global_norm(grads, config.max_grad_norm)
+            # Apply the gradients to adjust the shared variables. 
+            # That operation also increments `global_step`.
+            apply_gradients_op = opt.apply_gradients(zip(grads, tvars), global_step=global_step)
+            train_op = apply_gradients_op
 
-        # Apply the gradients to adjust the shared variables. 
-        # That operation also increments `global_step`.
-        train_op = opt.apply_gradients(grads, global_step=global_step)
-
-        saver = tf.train.Saver(tf.global_variables())
-        with tf.Session(config=tf.ConfigProto(
-            allow_soft_placement=True)) as session:
-            init = tf.global_variables_initializer()
-            tf.local_variables_initializer().run()
-            session.run(init)
-
+        sv = tf.train.Supervisor(logdir=FLAGS.save_path)
+        with sv.managed_session(config=tf.ConfigProto(allow_soft_placement=True)) as session:
             logging.info("Number of parameters: {}".format(utils.count_number_trainable_params()))
             logging.info(session.run(files))
 
@@ -131,46 +134,23 @@ def train():
             threads = tf.train.start_queue_runners(sess=session, coord=coord)
             summary_writer = tf.summary.FileWriter(FLAGS.tblog, session.graph)
             for i in range(config.max_max_epoch):
+                lr_decay = config.lr_decay ** max(i + 1 - config.max_epoch, 0.0)
+                assign_lr(session, config.learning_rate * lr_decay)
                 logging.info("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(lr)))
+
                 train_perplexity = run_epoch(session, m, eval_op=train_op, verbose=True,
                                              epoch_size=epoch_size, summary_writer=summary_writer, 
                                              num_gpus=FLAGS.num_gpus)
                 logging.info("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
-                if FLAGS.save_path:
-                    logging.info("Saving model to %s." % FLAGS.save_path)
-                    saver.save(session, FLAGS.save_path,
-                                global_step=i+1)
             summary_writer.close()
 
             coord.request_stop()
             coord.join(threads)
 
-
-#        sv = tf.train.Supervisor(logdir=FLAGS.save_path)
-#        with sv.managed_session() as session:
-#            logging.info("Number of parameters: {}".format(utils.count_number_trainable_params()))
-#            logging.info(session.run(files))
-#
-#            coord = tf.train.Coordinator()
-#            threads = tf.train.start_queue_runners(sess=session, coord=coord)
-#            summary_writer = tf.summary.FileWriter(FLAGS.tblog, session.graph)
-#            for i in range(config.max_max_epoch):
-#                lr_decay = config.lr_decay ** max(i + 1 - config.max_epoch, 0.0)
-#                m.assign_lr(session, config.learning_rate * lr_decay)
-#                logging.info("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(m.lr)))
-#
-#                train_perplexity = run_epoch(session, m, eval_op=m.train_op, verbose=True,
-#                                             epoch_size=epoch_size, summary_writer=summary_writer)
-#                logging.info("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
-#            summary_writer.close()
-#
-#            coord.request_stop()
-#            coord.join(threads)
-#
-#            if FLAGS.save_path:
-#                logging.info("Saving model to %s." % FLAGS.save_path)
-#                sv.saver.save(session, FLAGS.save_path,
-#                              global_step=sv.global_step)
+            if FLAGS.save_path:
+                logging.info("Saving model to %s." % FLAGS.save_path)
+                sv.saver.save(session, FLAGS.save_path,
+                              global_step=sv.global_step)
 
 
 def main(argv=None):
