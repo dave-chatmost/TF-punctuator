@@ -41,7 +41,7 @@ def train():
         initializer = tf.random_uniform_initializer(
             -config.init_scale, config.init_scale)
 
-        input_batch, label_batch, files = punc_input.inputs(os.path.join(FLAGS.data_path, "data/train"),
+        input_batch, label_batch, files = punc_input.inputs(os.path.join(FLAGS.data_path, "train"),
                                                             num_steps=config.num_steps,
                                                             batch_size=config.batch_size)
 

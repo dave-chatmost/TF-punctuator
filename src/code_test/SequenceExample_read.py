@@ -1,7 +1,12 @@
 import tensorflow as tf 
 
+flags = tf.app.flags
+flags.DEFINE_string("data_dir", "../punc_data/data",
+                    """Directory where exists text dataset""")
+FLAGS = flags.FLAGS
+
 reader = tf.TFRecordReader()
-filename_queue = tf.train.string_input_producer(["Records/tfrecords-00001-of-00004"])
+filename_queue = tf.train.string_input_producer([FLAGS.data_dir])
 _, serialized_example = reader.read(filename_queue)
 
 sequence_features = {
@@ -16,7 +21,7 @@ _, sequence = tf.parse_single_sequence_example(
 inputs = sequence["inputs"]
 labels = sequence["labels"]
 
-batch_size=5
+batch_size=1
 batch = tf.train.batch(
     tensors=[inputs, labels],
     batch_size=batch_size,

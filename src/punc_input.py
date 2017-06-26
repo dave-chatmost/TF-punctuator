@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 
-def inputs(data_dir, num_steps=20, batch_size=1, tfrecords_format="tfrecords-*"):
+def inputs(data_dir, num_steps=20, batch_size=1, tfrecords_format="tfrecords-*", mode="words"):
     """Construct input and label for punctuation prediction.
 
     Args:
@@ -24,38 +24,70 @@ def inputs(data_dir, num_steps=20, batch_size=1, tfrecords_format="tfrecords-*")
     reader = tf.TFRecordReader()
     _, serialized_example = reader.read(filename_queue)
 
-    EXAMPLES_PER_FILE = 500000
-    features = tf.parse_single_example(
-        serialized_example,
-        features={
-            "inputs": tf.FixedLenFeature([EXAMPLES_PER_FILE], tf.int64),
-            "labels": tf.FixedLenFeature([EXAMPLES_PER_FILE], tf.int64),
-        })
+    if mode == "words":
+        EXAMPLES_PER_FILE = 500000
+        features = tf.parse_single_example(
+            serialized_example,
+            features={
+                "inputs": tf.FixedLenFeature([EXAMPLES_PER_FILE], tf.int64),
+                "labels": tf.FixedLenFeature([EXAMPLES_PER_FILE], tf.int64),
+            })
 
-    input = features["inputs"]
-    label = features["labels"]
+        input = features["inputs"]
+        label = features["labels"]
 
-    data_len = tf.size(input)
-    batch_len = tf.to_int32(data_len / batch_size)
+        data_len = tf.size(input)
+        batch_len = tf.to_int32(data_len / batch_size)
 
-    input_data = tf.transpose(
-                    tf.reshape(
-                        tf.slice(input, [0], [batch_size * batch_len]), 
-                        [batch_size, batch_len]))
-    label_data = tf.transpose(
-                    tf.reshape(
-                        tf.slice(label, [0], [batch_size * batch_len]), 
-                        [batch_size, batch_len]))
+        input_data = tf.transpose(
+                        tf.reshape(
+                            tf.slice(input, [0], [batch_size * batch_len]), 
+                            [batch_size, batch_len]))
+        label_data = tf.transpose(
+                        tf.reshape(
+                            tf.slice(label, [0], [batch_size * batch_len]), 
+                            [batch_size, batch_len]))
 
-    num_threads = 32
-    capacity = 20000 + 20 * batch_size
+        num_threads = 32
+        capacity = 20000 + 20 * batch_size
 
-    input_batch, label_batch = tf.train.batch(
-        [input_data, label_data], batch_size=num_steps, num_threads=num_threads, 
-        capacity=capacity, enqueue_many=True, shapes=[[batch_size], [batch_size]])
+        input_batch, label_batch = tf.train.batch(
+            [input_data, label_data], batch_size=num_steps, num_threads=num_threads, 
+            capacity=capacity, enqueue_many=True, shapes=[[batch_size], [batch_size]])
 
-    input_batch = tf.transpose(input_batch)
-    label_batch = tf.transpose(label_batch)
+        input_batch = tf.transpose(input_batch)
+        label_batch = tf.transpose(label_batch)
+    elif mode == "sentences":
+        sequence_features = {
+            "inputs": tf.FixedLenSequenceFeature([], dtype=tf.int64),
+            "labels": tf.FixedLenSequenceFeature([], dtype=tf.int64)
+        }
+
+        _, sequence = tf.parse_single_sequence_example(
+            serialized=serialized_example,
+            sequence_features=sequence_features
+        )
+        inputs = sequence["inputs"]
+        labels = sequence["labels"]
+
+        num_threads = 32
+        capacity = 20000 + 20 * batch_size
+        batch = tf.train.batch(
+            tensors=[inputs, labels],
+            batch_size=batch_size,
+            dynamic_pad=True,
+            #num_threads=num_threads,
+            capacity=10
+        )
+        inputs_batch = batch[0]
+        labels_batch = batch[1]
+        #i = tf.constant(0, dtype=tf.int32)
+
+        i = tf.train.range_input_producer(tf.size(inputs_batch[0])//num_steps, shuffle=False).dequeue()
+        input_batch = tf.strided_slice(inputs_batch, [0, i * num_steps],
+                                       [batch_size, (i + 1) * num_steps])
+        label_batch = tf.strided_slice(labels_batch, [0, i * num_steps],
+                                       [batch_size, (i + 1) * num_steps])
 
     return input_batch, label_batch, files
 
