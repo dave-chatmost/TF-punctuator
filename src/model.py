@@ -104,18 +104,20 @@ class LSTMModel(object):
             inputs = tf.nn.dropout(inputs, config.keep_prob)
 
         # Define output
-        outputs = []
+        #outputs = []
         state = self._initial_state
         with tf.variable_scope("RNN"):
-            for time_step in range(num_steps):
-                if time_step > 0: tf.get_variable_scope().reuse_variables()
-                (cell_output, state) = cell(inputs[:, time_step, :], state)
-                outputs.append(cell_output)
+            outputs, state = tf.nn.dynamic_rnn(cell=cell, inputs=inputs, initial_state=state, dtype=tf.float32)
+            #for time_step in range(num_steps):
+            #    if time_step > 0: tf.get_variable_scope().reuse_variables()
+            #    (cell_output, state) = cell(inputs[:, time_step, :], state)
+            #    outputs.append(cell_output)
 
         if num_proj is not None:
             hidden_size = num_proj
 
-        output = tf.reshape(tf.concat(outputs, 1), [-1, hidden_size])
+        output = tf.reshape(outputs, [-1, hidden_size])
+        #output = tf.reshape(tf.concat(outputs, 1), [-1, hidden_size])
         softmax_w = tf.get_variable(
             "softmax_w", [hidden_size, punc_size], dtype=tf.float32)
         softmax_b = tf.get_variable(

@@ -56,7 +56,7 @@ def train():
 
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=session, coord=coord)
-            epoch_size = punc_input.get_epoch_size(FLAGS.data_path + "/data/train.pkl",
+            epoch_size = punc_input.get_epoch_size(FLAGS.data_path + "/train.pkl",
                                                    config.batch_size, config.num_steps)
             summary_writer = tf.summary.FileWriter(FLAGS.tblog, session.graph)
             for i in range(config.max_max_epoch):

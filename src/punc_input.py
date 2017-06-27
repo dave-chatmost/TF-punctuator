@@ -79,15 +79,15 @@ def inputs(data_dir, num_steps=20, batch_size=1, tfrecords_format="tfrecords-*",
             #num_threads=num_threads,
             capacity=10
         )
-        inputs_batch = batch[0]
-        labels_batch = batch[1]
+        input_batch = batch[0]
+        label_batch = batch[1]
         #i = tf.constant(0, dtype=tf.int32)
 
-        i = tf.train.range_input_producer(tf.size(inputs_batch[0])//num_steps, shuffle=False).dequeue()
-        input_batch = tf.strided_slice(inputs_batch, [0, i * num_steps],
-                                       [batch_size, (i + 1) * num_steps])
-        label_batch = tf.strided_slice(labels_batch, [0, i * num_steps],
-                                       [batch_size, (i + 1) * num_steps])
+        #i = tf.train.range_input_producer(tf.size(inputs_batch[0])//num_steps, shuffle=False).dequeue()
+        #input_batch = tf.strided_slice(inputs_batch, [0, i * num_steps],
+        #                               [batch_size, (i + 1) * num_steps])
+        #label_batch = tf.strided_slice(labels_batch, [0, i * num_steps],
+        #                               [batch_size, (i + 1) * num_steps])
 
     return input_batch, label_batch, files
 

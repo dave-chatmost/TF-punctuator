@@ -10,7 +10,7 @@ for i in range(20):
     sequences.append([])
     label_sequences.append([])
     for e in range(randrange(5,20)):
-        sequences[-1].append(e+1)
+        sequences[-1].append(randrange(1,9))
         label_sequences[-1].append(randrange(1,5))
 for i in range(20):
     print(sequences[i], label_sequences[i])

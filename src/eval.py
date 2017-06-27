@@ -43,7 +43,7 @@ def evaluate():
         initializer = tf.random_uniform_initializer(
             -config.init_scale, config.init_scale)
 
-        input_batch, label_batch = punc_input.eval_inputs(FLAGS.data_path + "/data/test.pkl",
+        input_batch, label_batch = punc_input.eval_inputs(FLAGS.data_path + "/test.pkl",
                                                           batch_size=config.batch_size)
 
         with tf.variable_scope("Model", reuse=None, initializer=initializer):
@@ -62,7 +62,7 @@ def evaluate():
                 logging.info("No checkpoint file found")
                 return
 
-            epoch_size = punc_input.get_epoch_size(FLAGS.data_path + "/data/test.pkl",
+            epoch_size = punc_input.get_epoch_size(FLAGS.data_path + "/test.pkl",
                                                    config.batch_size, config.num_steps,
                                                    EXAMPLES_PER_FILE=1)
 
@@ -74,7 +74,7 @@ def evaluate():
         with open(pred_file, "w") as f:
             f.write(str(predicts) + '\n')
 
-        test_data=np.load(FLAGS.data_path + "/data/test.pkl")
+        test_data=np.load(FLAGS.data_path + "/test.pkl")
         labels = test_data["outputs"][:len(predicts)]
 
         label_file = os.path.join(FLAGS.save_path, "label.txt")
