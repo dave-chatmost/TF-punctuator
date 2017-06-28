@@ -6,19 +6,28 @@ from random import randrange
 #label_sequences = [[2, 1, 1], [2, 3, 1, 1], [4, 3]]
 sequences = []
 label_sequences = []
-for i in range(20):
+num_seq=20
+for i in range(num_seq):
     sequences.append([])
     label_sequences.append([])
     for e in range(randrange(5,20)):
         sequences[-1].append(randrange(1,9))
         label_sequences[-1].append(randrange(1,5))
-for i in range(20):
+for i in range(num_seq):
     print(sequences[i], label_sequences[i])
 print("Above is fake data.")
+
+print("Sort by sequence length")
+sequences.sort(key=lambda x:len(x))
+label_sequences.sort(key=lambda x:len(x))
+for i in range(num_seq):
+    print(sequences[i], label_sequences[i])
+print("Above is sorted data.")
 
 
 def make_example(sequence, labels):
     ex = tf.train.SequenceExample()
+    ex.context.feature["length"].int64_list.value.append(len(sequence))
     fl_inputs = ex.feature_lists.feature_list["inputs"]
     fl_labels = ex.feature_lists.feature_list["labels"]
     for input, label in zip(sequence, labels):

@@ -86,6 +86,9 @@ def sentences_to_ids(file_path, vocabulary, punctuations):
     
     with open(file_path, 'r') as corpus:
         for line in corpus:
+            # Skip blank line
+            if len(line.strip()) == 0:
+                continue
             inputs.append([])
             outputs.append([])
             for token in line.split():
@@ -142,6 +145,7 @@ def convert_file_according_words(file_path, vocabulary, punctuations, output_pat
 
 def make_example(sequence, labels):
     ex = tf.train.SequenceExample()
+    ex.context.feature["length"].int64_list.value.append(len(sequence))
     fl_inputs = ex.feature_lists.feature_list["inputs"]
     fl_labels = ex.feature_lists.feature_list["labels"]
     for input, label in zip(sequence, labels):
@@ -157,12 +161,14 @@ def convert_file_according_sentences(file_path, vocabulary, punctuations, output
     tf.gfile.MakeDirs(output_path)
 
     inputs, outputs = sentences_to_ids(file_path, vocabulary, punctuations)
+    inputs.sort(key=lambda x:len(x))
+    outputs.sort(key=lambda x:len(x))
     print("Number of sentence is " + str(len(inputs)))
     assert len(inputs) == len(outputs)
 
     save_to_pickle(inputs, outputs, vocabulary, punctuations, output_path)
 
-    SENTENCES_PER_FILE = 50000
+    SENTENCES_PER_FILE = 5000
     NUM_FILES = int(np.ceil(len(inputs)/SENTENCES_PER_FILE))
     for i in range(NUM_FILES):
         filename = os.path.join(output_path,  "tfrecords-%.5d-of-%.5d" % (i+1, NUM_FILES))

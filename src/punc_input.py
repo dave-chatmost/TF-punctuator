@@ -19,7 +19,7 @@ def inputs(data_dir, num_steps=20, batch_size=1, tfrecords_format="tfrecords-*",
     MATCH_FORMAT = os.path.join(data_dir, tfrecords_format)
     files = tf.train.match_filenames_once(MATCH_FORMAT)
 
-    filename_queue = tf.train.string_input_producer(files, shuffle=False)
+    filename_queue = tf.train.string_input_producer(files, shuffle=True)
 
     reader = tf.TFRecordReader()
     _, serialized_example = reader.read(filename_queue)
@@ -57,30 +57,37 @@ def inputs(data_dir, num_steps=20, batch_size=1, tfrecords_format="tfrecords-*",
 
         input_batch = tf.transpose(input_batch)
         label_batch = tf.transpose(label_batch)
+        return input_batch, label_batch, files
     elif mode == "sentences":
+        context_features = {
+            "length": tf.FixedLenFeature([], dtype=tf.int64)
+        }
         sequence_features = {
             "inputs": tf.FixedLenSequenceFeature([], dtype=tf.int64),
             "labels": tf.FixedLenSequenceFeature([], dtype=tf.int64)
         }
 
-        _, sequence = tf.parse_single_sequence_example(
+        seq_length, sequence = tf.parse_single_sequence_example(
             serialized=serialized_example,
+            context_features=context_features,
             sequence_features=sequence_features
         )
+        length = seq_length["length"]
         inputs = sequence["inputs"]
         labels = sequence["labels"]
 
         num_threads = 32
         capacity = 20000 + 20 * batch_size
         batch = tf.train.batch(
-            tensors=[inputs, labels],
+            tensors=[inputs, labels, length],
             batch_size=batch_size,
             dynamic_pad=True,
-            #num_threads=num_threads,
-            capacity=10
+            num_threads=num_threads,
+            capacity=capacity
         )
         input_batch = batch[0]
         label_batch = batch[1]
+        seq_len = batch[2]
         #i = tf.constant(0, dtype=tf.int32)
 
         #i = tf.train.range_input_producer(tf.size(inputs_batch[0])//num_steps, shuffle=False).dequeue()
@@ -88,8 +95,8 @@ def inputs(data_dir, num_steps=20, batch_size=1, tfrecords_format="tfrecords-*",
         #                               [batch_size, (i + 1) * num_steps])
         #label_batch = tf.strided_slice(labels_batch, [0, i * num_steps],
         #                               [batch_size, (i + 1) * num_steps])
+        return input_batch, label_batch, seq_len, files
 
-    return input_batch, label_batch, files
 
 
 def eval_inputs(data_dir, batch_size=1, inputs=None, outputs=None):
