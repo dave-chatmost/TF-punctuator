@@ -111,7 +111,7 @@ def sentences_to_ids(file_path, vocabulary, punctuations):
                     outputs[-1].append(punctuation_index(punctuations, punctuation))
                     punctuation = " "
             if len(inputs[-1]) <= 1 or len(inputs[-1]) >= 200:
-                print("del\n", inputs[-1], '\n', outputs[-1])
+                #print("del\n", inputs[-1], '\n', outputs[-1])
                 del inputs[-1]
                 del outputs[-1]
                 continue
@@ -161,7 +161,7 @@ def convert_file_according_words(file_path, vocabulary, punctuations, output_pat
 
 def make_example(sequence, labels):
     ex = tf.train.SequenceExample()
-    print(len(sequence))
+    #print(len(sequence))
     ex.context.feature["length"].int64_list.value.append(len(sequence))
     fl_inputs = ex.feature_lists.feature_list["inputs"]
     fl_labels = ex.feature_lists.feature_list["labels"]
@@ -219,10 +219,10 @@ def convert_text_to_tfrecord(raw_data_path, conf, mode="words", output_dir="data
     elif mode == "sentences":
         convert_file = convert_file_according_sentences
 
-    #convert_file(train_data, vocabulary, punctuations,
-    #            os.path.join(data_path, "train"))
-    #convert_file(valid_data, vocabulary, punctuations,
-    #            os.path.join(data_path, "valid"))
+    convert_file(train_data, vocabulary, punctuations,
+                os.path.join(data_path, "train"))
+    convert_file(valid_data, vocabulary, punctuations,
+                os.path.join(data_path, "valid"))
     convert_file(test_data, vocabulary, punctuations,
                 os.path.join(data_path, "test"))
 

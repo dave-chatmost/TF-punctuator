@@ -218,10 +218,10 @@ class SmallConfig(object):
     hidden_size = 100
     num_proj = 100
     max_epoch = 4
-    max_max_epoch = 20
+    max_max_epoch = 13
     keep_prob = 1.0
     lr_decay = 0.5
-    batch_size = 256
+    batch_size = 64
     vocab_size = 100000 + 2
     punc_size = 5
 
