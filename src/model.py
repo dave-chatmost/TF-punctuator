@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 
 
-def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, summary_writer=None, num_gpus=1):
+def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpus=1):
     """Runs the model on the given data."""
     start_time = time.time()
     costs = 0.0
@@ -18,7 +18,6 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, summary
         "cost": model.cost,
         "final_state": model.final_state,
         "logits": model.logits,
-        "merged": model.merged
     }
     if eval_op is not None:
         fetches["eval_op"] = eval_op
@@ -47,9 +46,6 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, summary
             logging.info("%.3f perplexity: %.3f speed: %.0f wps" %
                   (step * 1.0 / epoch_size, np.exp(costs / iters),
                    num_gpus * iters * model.batch_size / (time.time() - start_time)))
-        merged = vals["merged"]
-        if summary_writer:
-            summary_writer.add_summary(merged, step)
 
     if eval_op is None:
         # Make the predicts right format
@@ -104,20 +100,20 @@ class LSTMModel(object):
             inputs = tf.nn.dropout(inputs, config.keep_prob)
 
         # Define output
-        #outputs = []
+        outputs = []
         state = self._initial_state
         with tf.variable_scope("RNN"):
-            outputs, state = tf.nn.dynamic_rnn(cell=cell, inputs=inputs, initial_state=state, dtype=tf.float32)
-            #for time_step in range(num_steps):
-            #    if time_step > 0: tf.get_variable_scope().reuse_variables()
-            #    (cell_output, state) = cell(inputs[:, time_step, :], state)
-            #    outputs.append(cell_output)
+            #outputs, state = tf.nn.dynamic_rnn(cell=cell, inputs=inputs, initial_state=state, dtype=tf.float32)
+            for time_step in range(num_steps):
+                if time_step > 0: tf.get_variable_scope().reuse_variables()
+                (cell_output, state) = cell(inputs[:, time_step, :], state)
+                outputs.append(cell_output)
 
         if num_proj is not None:
             hidden_size = num_proj
 
-        output = tf.reshape(outputs, [-1, hidden_size])
-        #output = tf.reshape(tf.concat(outputs, 1), [-1, hidden_size])
+        #output = tf.reshape(outputs, [-1, hidden_size])
+        output = tf.reshape(tf.concat(outputs, 1), [-1, hidden_size])
         softmax_w = tf.get_variable(
             "softmax_w", [hidden_size, punc_size], dtype=tf.float32)
         softmax_b = tf.get_variable(
@@ -130,9 +126,6 @@ class LSTMModel(object):
             [tf.ones([batch_size * num_steps], dtype=tf.float32)])
         self._cost = cost = tf.reduce_sum(loss) / batch_size
         self._final_state = state
-
-        tf.summary.scalar("cross_entropy", cost)
-        self._merged = tf.summary.merge_all()
 
         if not is_training:
             return
@@ -177,10 +170,6 @@ class LSTMModel(object):
     @property
     def logits(self):
         return self._logits
-
-    @property
-    def merged(self):
-        return self._merged
 
     @property
     def grads(self):
