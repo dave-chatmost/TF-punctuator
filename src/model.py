@@ -6,65 +6,70 @@ import numpy as np
 import tensorflow as tf
 
 
-def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, summary_writer=None, num_gpus=1):
+def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpus=1):
     """Runs the model on the given data."""
     start_time = time.time()
+    all_words = 0
     costs = 0.0
-    iters = 0
-    state = session.run(model.initial_state)
     predicts = []
 
     fetches = {
         "cost": model.cost,
-        "final_state": model.final_state,
-        "logits": model.logits,
-        "merged": model.merged
+        "mask": model.mask,
+        "predict": model.predicts,
+        "seqlen": model.seq_len
     }
     if eval_op is not None:
         fetches["eval_op"] = eval_op
 
     logging.info("Epoch size: %d" % epoch_size) 
     for step in range(epoch_size):
-        feed_dict = {}
-        for i, (c, h) in enumerate(model.initial_state):
-            feed_dict[c] = state[i].c
-            feed_dict[h] = state[i].h 
-        
-        vals = session.run(fetches, feed_dict)
+        vals = session.run(fetches)
         cost = vals["cost"]
-        state = vals["final_state"]
+        mask = vals["mask"]
         if eval_op is None:
-            predict = vals["logits"]
-            predicts.extend(np.argmax(predict, 1).tolist())
+            predict = vals["predict"]
+            if step > 497:
+                #for i in range(len(mask)):
+                #    print(mask[i])
+                print(np.sum(mask, axis=1))
+                print(vals["seqlen"])
+            mask = np.array(np.round(mask), dtype=np.int32)
+            shape = mask.shape
+            if step > 10 and step < 20:
+                print(predict)
+                #print(np.argmax(predict, 1))
+            predict = np.reshape(np.argmax(predict, 1), shape).tolist()
+            mask = np.sum(mask, axis=1).tolist()
+            for i in range(shape[0]):
+                predicts.append(predict[i][:mask[i]])
+            #predicts.extend(np.argmax(predict, 1).tolist())
 
         costs += cost
-        iters += model.num_steps
+        all_words += np.sum(mask)
 
         if epoch_size < 100:
             verbose = False
 
         if verbose and step % (epoch_size // 100) == 10:
             logging.info("%.3f perplexity: %.3f speed: %.0f wps" %
-                  (step * 1.0 / epoch_size, np.exp(costs / iters),
-                   num_gpus * iters * model.batch_size / (time.time() - start_time)))
-        merged = vals["merged"]
-        if summary_writer:
-            summary_writer.add_summary(merged, step)
+                  (step * 1.0 / epoch_size, np.exp(costs / step),
+                   num_gpus * all_words / (time.time() - start_time)))
 
     if eval_op is None:
         # Make the predicts right format
-        final_predicts = np.concatenate(
-            np.array(predicts).reshape([-1, model.batch_size]).T,
-            axis=0).tolist()
-        return np.exp(costs / iters), final_predicts
+        #final_predicts = np.concatenate(
+        #    np.array(predicts).reshape([-1, model.batch_size]).T,
+        #    axis=0).tolist()
+        return np.exp(costs / epoch_size), predicts
     else:
-        return np.exp(costs / iters)
+        return np.exp(costs / epoch_size)
 
 
 class LSTMModel(object):
     """The Punctuation Prediction LSTM Model."""
 
-    def __init__(self, input_batch, label_batch, is_training, config):
+    def __init__(self, input_batch, label_batch, seq_len, is_training, config):
         self.batch_size = batch_size = config.batch_size
         self.num_steps = num_steps = config.num_steps
 
@@ -76,13 +81,10 @@ class LSTMModel(object):
 
         # Set LSTM cell
         def lstm_cell():
-            if 'reuse' in inspect.getargspec(
-                    tf.contrib.rnn.BasicLSTMCell.__init__).args:
-                return tf.contrib.rnn.LSTMCell(
-                    hidden_size, use_peepholes=True, num_proj=num_proj,
-                    forget_bias=0.0, state_is_tuple=True,
-                    reuse=tf.get_variable_scope().reuse)
-
+            return tf.contrib.rnn.LSTMCell(
+                hidden_size, use_peepholes=True, num_proj=num_proj,
+                forget_bias=0.0, state_is_tuple=True,
+                reuse=tf.get_variable_scope().reuse)
         attn_cell = lstm_cell
         if is_training and config.keep_prob < 1:
             def attn_cell():
@@ -92,47 +94,47 @@ class LSTMModel(object):
             [attn_cell() for _ in range(config.num_layers)],
             state_is_tuple=True)
         
-        self._initial_state = cell.zero_state(batch_size, tf.float32)
-
         # Embedding part
         with tf.device("/cpu:0"):
             embedding = tf.get_variable(
                 "embedding", [vocab_size, embedding_size], dtype=tf.float32)
             inputs = tf.nn.embedding_lookup(embedding, input_batch)
-        
         if is_training and config.keep_prob < 1:
             inputs = tf.nn.dropout(inputs, config.keep_prob)
 
-        # Define output
-        #outputs = []
-        state = self._initial_state
+        # Automatically reset state in each batch
         with tf.variable_scope("RNN"):
-            outputs, state = tf.nn.dynamic_rnn(cell=cell, inputs=inputs, initial_state=state, dtype=tf.float32)
-            #for time_step in range(num_steps):
-            #    if time_step > 0: tf.get_variable_scope().reuse_variables()
-            #    (cell_output, state) = cell(inputs[:, time_step, :], state)
-            #    outputs.append(cell_output)
+            outputs, state = tf.nn.dynamic_rnn(cell=cell,
+                                               inputs=inputs,
+                                               sequence_length=seq_len,
+                                               dtype=tf.float32)
 
         if num_proj is not None:
             hidden_size = num_proj
 
         output = tf.reshape(outputs, [-1, hidden_size])
-        #output = tf.reshape(tf.concat(outputs, 1), [-1, hidden_size])
         softmax_w = tf.get_variable(
             "softmax_w", [hidden_size, punc_size], dtype=tf.float32)
         softmax_b = tf.get_variable(
             "softmax_b", [punc_size], dtype=tf.float32)
         logits = tf.matmul(output, softmax_w) + softmax_b
-        self._logits = tf.nn.softmax(logits)
-        loss = tf.contrib.legacy_seq2seq.sequence_loss_by_example(
-            [logits],
-            [tf.reshape(label_batch, [-1])],
-            [tf.ones([batch_size * num_steps], dtype=tf.float32)])
-        self._cost = cost = tf.reduce_sum(loss) / batch_size
-        self._final_state = state
+        self._predicts = tf.nn.softmax(logits)
 
-        tf.summary.scalar("cross_entropy", cost)
-        self._merged = tf.summary.merge_all()
+        # Generate mask matrix to mask loss
+        maxlen = tf.cast(tf.reduce_max(seq_len), tf.int32) # it can not work on type int64
+        ones = tf.ones([maxlen, maxlen], dtype=tf.float32)
+        low_triangular_ones = tf.matrix_band_part(ones, -1, 0)
+        mask = tf.gather(low_triangular_ones, seq_len-1)
+        self._mask = tf.cast(mask, tf.int32)
+        self.seq_len = seq_len
+        mask_flat = tf.reshape(mask, [-1])
+
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+            logits=logits,
+            labels=tf.reshape(label_batch, [-1])
+        )
+        masked_loss = mask_flat * loss
+        self._cost = cost = tf.reduce_sum(loss) / tf.reduce_sum(mask_flat)
 
         if not is_training:
             return
@@ -155,17 +157,9 @@ class LSTMModel(object):
         session.run(self._lr_update, feed_dict={self._new_lr: lr_value})
 
     @property
-    def initial_state(self):
-        return self._initial_state
-
-    @property
     def cost(self):
         return self._cost
 
-    @property
-    def final_state(self):
-        return self._final_state
-    
     @property
     def lr(self):
         return self._lr
@@ -175,13 +169,13 @@ class LSTMModel(object):
         return self._train_op
 
     @property
-    def logits(self):
-        return self._logits
-
-    @property
-    def merged(self):
-        return self._merged
+    def predicts(self):
+        return self._predicts
 
     @property
     def grads(self):
         return self._grads
+
+    @property
+    def mask(self):
+        return self._mask

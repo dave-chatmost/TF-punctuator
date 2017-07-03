@@ -82,23 +82,39 @@ def words_to_ids(file_path, vocabulary, punctuations):
 def sentences_to_ids(file_path, vocabulary, punctuations):
     inputs = []
     outputs = []
-    punctuation = " "
     
     with open(file_path, 'r') as corpus:
         for line in corpus:
             # Skip blank line
             if len(line.strip()) == 0:
                 continue
+            punctuation = " "
             inputs.append([])
             outputs.append([])
+            meet_first_word = False
             for token in line.split():
-                if token in punctuations:
+                if token in punctuations and meet_first_word:
                     punctuation = token
+                    # if the length of this sentence is bigger than 100, 
+                    # truncate this sentence to some short sentences.
+                    if len(inputs[-1]) >= 100:
+                        inputs[-1].append(input_word_index(vocabulary, "<END>"))
+                        outputs[-1].append(punctuation_index(punctuations, punctuation))
+                        punctuation = " "
+                        inputs.append([])
+                        outputs.append([])
+                        meet_first_word = False
                     continue
                 else:
+                    meet_first_word = True
                     inputs[-1].append(input_word_index(vocabulary, token))
                     outputs[-1].append(punctuation_index(punctuations, punctuation))
                     punctuation = " "
+            if len(inputs[-1]) <= 1 or len(inputs[-1]) >= 200:
+                print("del\n", inputs[-1], '\n', outputs[-1])
+                del inputs[-1]
+                del outputs[-1]
+                continue
             inputs[-1].append(input_word_index(vocabulary, "<END>"))
             outputs[-1].append(punctuation_index(punctuations, punctuation))
     return inputs, outputs
@@ -145,6 +161,7 @@ def convert_file_according_words(file_path, vocabulary, punctuations, output_pat
 
 def make_example(sequence, labels):
     ex = tf.train.SequenceExample()
+    print(len(sequence))
     ex.context.feature["length"].int64_list.value.append(len(sequence))
     fl_inputs = ex.feature_lists.feature_list["inputs"]
     fl_labels = ex.feature_lists.feature_list["labels"]
@@ -202,10 +219,10 @@ def convert_text_to_tfrecord(raw_data_path, conf, mode="words", output_dir="data
     elif mode == "sentences":
         convert_file = convert_file_according_sentences
 
-    convert_file(train_data, vocabulary, punctuations,
-                os.path.join(data_path, "train"))
-    convert_file(valid_data, vocabulary, punctuations,
-                os.path.join(data_path, "valid"))
+    #convert_file(train_data, vocabulary, punctuations,
+    #            os.path.join(data_path, "train"))
+    #convert_file(valid_data, vocabulary, punctuations,
+    #            os.path.join(data_path, "valid"))
     convert_file(test_data, vocabulary, punctuations,
                 os.path.join(data_path, "test"))
 

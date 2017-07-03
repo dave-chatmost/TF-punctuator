@@ -43,15 +43,17 @@ def evaluate():
         initializer = tf.random_uniform_initializer(
             -config.init_scale, config.init_scale)
 
-        input_batch, label_batch = punc_input.eval_inputs(FLAGS.data_path + "/test.pkl",
-                                                          batch_size=config.batch_size)
+        input_batch, label_batch, seq_len, files = punc_input.inputs(os.path.join(FLAGS.data_path, "test"),
+                                                                     batch_size=config.batch_size, fileshuf=False,
+                                                                     mode="sentences")
 
         with tf.variable_scope("Model", reuse=None, initializer=initializer):
             mtest = LSTMModel(input_batch=input_batch, label_batch=label_batch,
-                              is_training=False, config=config)
+                              seq_len=seq_len, is_training=False, config=config)
 
         sv = tf.train.Supervisor()
         with sv.managed_session() as session:
+            logging.info(session.run(files))
             logging.info("Number of parameters: {}".format(utils.count_number_trainable_params()))
 
             ckpt = tf.train.get_checkpoint_state(FLAGS.save_path)
@@ -62,6 +64,7 @@ def evaluate():
                 logging.info("No checkpoint file found")
                 return
 
+            #epoch_size = 100
             epoch_size = punc_input.get_epoch_size(FLAGS.data_path + "/test.pkl",
                                                    config.batch_size, config.num_steps,
                                                    EXAMPLES_PER_FILE=1)
@@ -72,14 +75,31 @@ def evaluate():
         logging.info("predicts' length = {}".format(len(predicts)))
         pred_file = os.path.join(FLAGS.save_path, "predict.txt")
         with open(pred_file, "w") as f:
-            f.write(str(predicts) + '\n')
+            for i in range(len(predicts)):
+                f.write(str(predicts[i]) + '\n')
+            #f.write(str(predicts) + '\n')
 
         test_data=np.load(FLAGS.data_path + "/test.pkl")
         labels = test_data["outputs"][:len(predicts)]
 
         label_file = os.path.join(FLAGS.save_path, "label.txt")
         with open(label_file, "w") as f:
-            f.write(str(labels) + '\n')
+            for i in range(len(labels)):
+                f.write(str(labels[i]) + '\n')
+            #f.write(str(labels) + '\n')
+
+        l = []
+        p = []
+        for i in range(len(predicts)):
+            if len(predicts[i]) != len(labels[i]):
+                print(i,'\t', len(predicts[i])-len(labels[i]))
+                continue
+                #print(predicts[i])
+                #print(labels[i])
+            l.extend(labels[i])
+            p.extend(predicts[i])
+        labels = l
+        predicts = p
 
         precision, recall, fscore, support = score(labels, predicts)#score(predicts, labels)
         accuracy = accuracy_score(labels, predicts)
