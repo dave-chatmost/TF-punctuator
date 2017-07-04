@@ -60,7 +60,7 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpu
 class LSTMModel(object):
     """The Punctuation Prediction LSTM Model."""
 
-    def __init__(self, input_batch, label_batch, is_training, config):
+    def __init__(self, input_batch, label_batch, mask_batch, is_training, config):
         self.batch_size = batch_size = config.batch_size
         self.num_steps = num_steps = config.num_steps
 
@@ -102,9 +102,19 @@ class LSTMModel(object):
         # Define output
         outputs = []
         state = self._initial_state
+        mask_batch = tf.cast(mask_batch, tf.float32)
+
+        def reset_state_by_mask(states, mask):
+            state_variables = []
+            for state_c, state_h in states:
+                state_variables.append(tf.contrib.rnn.LSTMStateTuple(
+                    tf.transpose(tf.transpose(state_c) * mask),
+                    tf.transpose(tf.transpose(state_h) * mask)))
+            return tuple(state_variables)
+
         with tf.variable_scope("RNN"):
-            #outputs, state = tf.nn.dynamic_rnn(cell=cell, inputs=inputs, initial_state=state, dtype=tf.float32)
             for time_step in range(num_steps):
+                state = reset_state_by_mask(state, mask_batch[:, time_step])
                 if time_step > 0: tf.get_variable_scope().reuse_variables()
                 (cell_output, state) = cell(inputs[:, time_step, :], state)
                 outputs.append(cell_output)
@@ -112,7 +122,6 @@ class LSTMModel(object):
         if num_proj is not None:
             hidden_size = num_proj
 
-        #output = tf.reshape(outputs, [-1, hidden_size])
         output = tf.reshape(tf.concat(outputs, 1), [-1, hidden_size])
         softmax_w = tf.get_variable(
             "softmax_w", [hidden_size, punc_size], dtype=tf.float32)
