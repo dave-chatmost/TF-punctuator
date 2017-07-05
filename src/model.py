@@ -17,7 +17,7 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpu
     fetches = {
         "cost": model.cost,
         "final_state": model.final_state,
-        "logits": model.logits,
+        "predicts": model.predicts,
     }
     if eval_op is not None:
         fetches["eval_op"] = eval_op
@@ -33,7 +33,7 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpu
         cost = vals["cost"]
         state = vals["final_state"]
         if eval_op is None:
-            predict = vals["logits"]
+            predict = vals["predicts"]
             predicts.extend(np.argmax(predict, 1).tolist())
 
         costs += cost
@@ -72,13 +72,10 @@ class LSTMModel(object):
 
         # Set LSTM cell
         def lstm_cell():
-            if 'reuse' in inspect.getargspec(
-                    tf.contrib.rnn.BasicLSTMCell.__init__).args:
-                return tf.contrib.rnn.LSTMCell(
-                    hidden_size, use_peepholes=True, num_proj=num_proj,
-                    forget_bias=0.0, state_is_tuple=True,
-                    reuse=tf.get_variable_scope().reuse)
-
+            return tf.contrib.rnn.LSTMCell(
+                hidden_size, use_peepholes=True, num_proj=num_proj,
+                forget_bias=0.0, state_is_tuple=True,
+                reuse=tf.get_variable_scope().reuse)
         attn_cell = lstm_cell
         if is_training and config.keep_prob < 1:
             def attn_cell():
@@ -128,7 +125,7 @@ class LSTMModel(object):
         softmax_b = tf.get_variable(
             "softmax_b", [punc_size], dtype=tf.float32)
         logits = tf.matmul(output, softmax_w) + softmax_b
-        self._logits = tf.nn.softmax(logits)
+        self._predicts = tf.nn.softmax(logits)
         loss = tf.contrib.legacy_seq2seq.sequence_loss_by_example(
             [logits],
             [tf.reshape(label_batch, [-1])],
@@ -177,8 +174,8 @@ class LSTMModel(object):
         return self._train_op
 
     @property
-    def logits(self):
-        return self._logits
+    def predicts(self):
+        return self._predicts
 
     @property
     def grads(self):

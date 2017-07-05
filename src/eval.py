@@ -37,7 +37,7 @@ def evaluate():
     """Evaluate punctuator."""
     config = get_config(FLAGS.model)
     config.num_steps = 1
-    config.batch_size = 256
+    config.batch_size = 128
 
     with tf.Graph().as_default():
         initializer = tf.random_uniform_initializer(

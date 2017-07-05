@@ -36,7 +36,7 @@ def punctuation_index(punctuations, punctuation):
 
 def read_words(filename):
     with tf.gfile.GFile(filename, "r") as f:
-        return f.read().replace("\n", "<eos>").split()
+        return f.read().replace("\n", " ").split()
 
 
 def build_vocab(corpus, vocab_size, output_file):
@@ -88,28 +88,6 @@ def words_to_ids(file_path, vocabulary, punctuations):
             outputs.append(punctuation_index(punctuations, punctuation))
             punctuation = " "
     return inputs, outputs, masks
-
-
-def sentences_to_ids(file_path, vocabulary, punctuations):
-    inputs = []
-    outputs = []
-    punctuation = " "
-    
-    with open(file_path, 'r') as corpus:
-        for line in corpus:
-            inputs.append([])
-            outputs.append([])
-            for token in line.split():
-                if token in punctuations:
-                    punctuation = token
-                    continue
-                else:
-                    inputs[-1].append(input_word_index(vocabulary, token))
-                    outputs[-1].append(punctuation_index(punctuations, punctuation))
-                    punctuation = " "
-            inputs[-1].append(input_word_index(vocabulary, "<END>"))
-            outputs[-1].append(punctuation_index(punctuations, punctuation))
-    return inputs, outputs
 
 
 def save_to_pickle(inputs, outputs, masks, vocabulary, punctuations, output_path):
