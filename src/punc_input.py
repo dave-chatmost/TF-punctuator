@@ -66,7 +66,7 @@ def inputs(data_dir, num_steps=20, batch_size=1, tfrecords_format="tfrecords-*",
     return input_batch, label_batch, mask_batch, files
 
 
-def eval_inputs(data_dir, batch_size=1, inputs=None, outputs=None):
+def eval_inputs(data_dir, batch_size=1, inputs=None, outputs=None, masks=None):
     """Construct input and label for punctuation evaluation.
 
     Args:
@@ -86,6 +86,7 @@ def eval_inputs(data_dir, batch_size=1, inputs=None, outputs=None):
     else:
         eval_inputs = inputs
         eval_labels = outputs
+        eval_masks = masks
 
     eval_inputs = tf.convert_to_tensor(eval_inputs, name="eval_inputs", dtype=tf.int32)
     eval_labels = tf.convert_to_tensor(eval_labels, name="eval_labels", dtype=tf.int32)
