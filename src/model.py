@@ -6,13 +6,14 @@ import numpy as np
 import tensorflow as tf
 
 
-def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpus=1):
+def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpus=1, get_post=False):
     """Runs the model on the given data."""
     start_time = time.time()
     costs = 0.0
     iters = 0
     state = session.run(model.initial_state)
     predicts = []
+    posteriors = []
 
     fetches = {
         "cost": model.cost,
@@ -33,8 +34,12 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpu
         cost = vals["cost"]
         state = vals["final_state"]
         if eval_op is None:
+            # Keep in mind, when eval, num_steps=1, batch_size>=1
             predict = vals["predicts"]
             predicts.extend(np.argmax(predict, 1).tolist())
+            if get_post:
+                for e in predict:
+                    posteriors.append(e.tolist())
 
         costs += cost
         iters += model.num_steps
@@ -47,12 +52,15 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpu
                   (step * 1.0 / epoch_size, np.exp(costs / iters),
                    num_gpus * iters * model.batch_size / (time.time() - start_time)))
 
-    if eval_op is None:
+    if eval_op is None and not get_post:
         # Make the predicts right format
         final_predicts = np.concatenate(
             np.array(predicts).reshape([-1, model.batch_size]).T,
             axis=0).tolist()
         return np.exp(costs / iters), final_predicts
+    elif get_post:
+        # Keep in mind, when get_post, num_steps=1, batch_size=1
+        return np.exp(costs / iters), posteriors
     else:
         return np.exp(costs / iters)
 
