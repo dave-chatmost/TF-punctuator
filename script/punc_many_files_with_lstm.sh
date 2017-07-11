@@ -26,7 +26,7 @@ files=`cd $INPUT_DIR; ls *asr_out*`
 for file in $files
 do
     echo "Processing $file"
-    CUDA_VISIBLE_DEVICES=1 \
+    CUDA_VISIBLE_DEVICES=7 \
     python punctuate_text_with_lstm.py \
         --vocabulary=../data/punc_data_head300W/vocab \
         --punct_vocab=../data/punc_data_head300W/punct_vocab \

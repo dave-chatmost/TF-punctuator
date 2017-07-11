@@ -124,13 +124,12 @@ def punctuator(input_file, vocab_file, punct_vocab_file, output_file, get_post):
     vocabulary = load_vocabulary(vocab_file)
     punctuations = get_punctuations(punct_vocab_file)
     punct_vocab_reverse_map = utils.get_reverse_map(punctuations)
-    inputs, outputs, masks = words_to_ids(input_file, vocabulary, punctuations)
+    inputs, outputs, masks = words_to_ids(input_file, vocabulary, punctuations, mode='test')
 
     # Get predicts
     if get_post:
         posteriors = get_predicts(inputs, outputs, masks, get_post)
         write_posteriors(input_file, posteriors, punct_vocab_reverse_map, output_file)
-        #print(posteriors)
         return 
     else:
         predicts = get_predicts(inputs, outputs, masks)

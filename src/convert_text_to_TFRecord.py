@@ -62,12 +62,12 @@ def load_vocabulary(file_path):
     return vocabulary
 
 
-def words_to_ids(file_path, vocabulary, punctuations):
+def words_to_ids(file_path, vocabulary, punctuations, mode='train'):
+    # Add mode because there are some punctuations in the test file.
     inputs = []
     outputs = []
     masks = []
     punctuation = " "
-    # print("[DEBUG]", punctuations)
     
     with open(file_path, 'r') as corpus:
         for line in corpus:
@@ -75,7 +75,7 @@ def words_to_ids(file_path, vocabulary, punctuations):
             meet_first_word = False
             masks.append(0)
             for token in line.split():
-                if token in punctuations and meet_first_word:
+                if token in punctuations and meet_first_word and mode == 'train':
                     punctuation = token
                     continue
                 else:
