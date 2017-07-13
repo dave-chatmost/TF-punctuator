@@ -6,3 +6,8 @@
 #       Usage: specify the INDIR and OUTDIR in this script.
 # Step 3: Punctuate text file.    -->    punc_many_files.sh
 # Step 4: Compute WER.    -->    compute_wer.sh
+
+file=$1
+
+cat $file > tmplist
+python ../../tools/segment/wordseg.py list ~/data/punct/vocab ./tmpseg
