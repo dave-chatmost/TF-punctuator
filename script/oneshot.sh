@@ -9,5 +9,11 @@
 
 file=$1
 
-cat $file > tmplist
-python ../../tools/segment/wordseg.py list ~/data/punct/vocab ./tmpseg
+echo `pwd`/$file > tmplist
+python ../tools/segment/wordseg.py tmplist ~/data/punct/vocab ./tmpseg
+
+mv ./tmpseg/$1 ./tmpseg/asr_out
+bash punc_many_files_with_lstm.sh `pwd`/tmpseg/ `pwd`/tmppunc/ False
+cat ./tmppunc/asr_out | tr -d ' ' > ${file}_punc
+
+rm -rf tmplist ./tmpseg ./tmppunc

@@ -4,6 +4,8 @@
 # Author: Kaituo Xu (Sogou)
 # Funtion: Get posteriors for each word with HELM.
 
+echo "$0 $@"
+
 if [ $# != 4 ]; then
   echo "Get punctuation posteriors with Hidden Event Language Model."
   echo "Usage: <in-dir> <out-dir> <helm> <vocab>"
@@ -27,11 +29,11 @@ for file in $files; do
   #words[1]=1035715 # There are some errors with novel.txt_asr_out_tn
   echo ${words[i]} ${names[i]}
   let i++
-  cat $file | awk '{ print "<s> " $0 " </s>" }' >> /tmp/all_asr_out.$$
+  cat $file | awk '{ print "<s> " $0 " </s>" }' >> all_asr_out
 done
 
 echo "Step 2: Get posteriors with very big HELM"
-hidden-ngram -text /tmp/all_asr_out.$$ -order 5 -vocab $VOCAB -hidden-vocab ~/data/online_punc_ngram/hidden-vocab -keep-unk -lm $LM -posteriors > all_post_helm
+hidden-ngram -text all_asr_out -order 5 -vocab $VOCAB -hidden-vocab ~/data/online_punc_ngram/hidden-vocab -keep-unk -lm $LM -posteriors > all_post_helm
 
 echo "Step 3: Split posteriors file"
 [ ! -d $OUT_DIR ] && mkdir $OUT_DIR
@@ -40,3 +42,5 @@ for j in `seq 0 $((i-1))`; do
   processed=$(($processed+${words[$j]}))
   head -$processed all_post_helm | tail -${words[j]} | grep -v '\(<s>\)\|\(</s>\)' > $OUT_DIR/${names[j]}
 done
+
+rm all_asr_out

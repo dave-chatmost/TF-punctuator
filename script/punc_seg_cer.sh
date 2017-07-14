@@ -22,3 +22,9 @@ punc_many_files_with_interpolate.sh ~/punc-test-workspace/data/TN ~/punc-test-wo
 mkdir ~/punc-test-workspace/h300W_helm_h300W_lstm/inter.5_char
 python ../tools/segment/charseg.py ~/punc-test-workspace/h300W_helm_h300W_lstm/inter.5/ ~/punc-test-workspace/h300W_helm_h300W_lstm/inter.5_char
 bash compute_wer.sh ~/punc-test-workspace/data/TN_char/ ~/punc-test-workspace/h300W_helm_h300W_lstm/inter.5_char/ asr_out
+
+
+bash punc_many_files_with_helm.sh ~/punc-test-workspace/data/TN ~/punc-test-workspace/online5gram/hyp ~/data/online_punc_ngram/ai_merge.arpa2.binary ~/data/punct/vocab
+mkdir ~/punc-test-workspace/online5gram/hyp_char
+python ../tools/segment/charseg.py ~/punc-test-workspace/online5gram/hyp/ ~/punc-test-workspace/online5gram/hyp_char
+bash compute_wer.sh ~/punc-test-workspace/data/TN_char/ ~/punc-test-workspace/online5gram/hyp_char/ asr_out

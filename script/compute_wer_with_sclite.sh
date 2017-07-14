@@ -35,9 +35,9 @@ for hyp in $files; do
   awk '{ print $0 "(" NR "_V)" }' $cor_ref > temp_ref
   awk '{ print $0 "(" NR "_V)" }' $cor_unpunc > temp_unpunc
   echo "---------- BEFORE PUNCTUATION ----------"
-  sclite -r temp_ref trn -h temp_unpunc trn $hyp -i spu_id | grep 'Err\|Sum'
+  sclite -r temp_ref trn -h temp_unpunc trn $hyp -i spu_id 
   echo ""
   echo "---------- AFTER PUNCTUATION ----------"
-  sclite -r temp_ref trn -h temp_hyp trn $hyp -i spu_id | grep 'Err\|Sum'
+  sclite -r temp_ref trn -h temp_hyp trn $hyp -i spu_id #-o all #-O `pwd`/tmp/ #> /dev/null 2>&1
 done
 rm -f temp_hyp temp_ref temp_unpunc
