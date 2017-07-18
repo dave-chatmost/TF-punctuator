@@ -29,6 +29,10 @@ def get_config(model):
         return Hidden6Config()
     elif model == "hid7":
         return Hidden7Config()
+    elif model == "hid8":
+        return Hidden8Config()
+    elif model == "hid9":
+        return Hidden9Config()
     elif model == "proj1":
         return Proj1Config()
     elif model == "proj2":
@@ -198,6 +202,42 @@ class Hidden7Config(object):
     embedding_size = 256 # NOTE HERE
     hidden_size = 1024 # NOTE HERE
     num_proj = 100
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 100000 + 2
+    punc_size = 5
+
+class Hidden8Config(object):
+    """Hidden config."""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 3
+    num_steps = 20
+    embedding_size = 256 # NOTE HERE
+    hidden_size = 512 # NOTE HERE
+    num_proj = 256
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 100000 + 2
+    punc_size = 5
+
+class Hidden9Config(object):
+    """Hidden config."""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 2 # NOTE HERE
+    num_steps = 20
+    embedding_size = 256 # NOTE HERE
+    hidden_size = 1024 # NOTE HERE
+    num_proj = 256
     max_epoch = 4
     max_max_epoch = 7
     keep_prob = 1.0

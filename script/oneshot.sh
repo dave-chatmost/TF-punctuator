@@ -13,7 +13,7 @@ echo `pwd`/$file > tmplist
 python ../tools/segment/wordseg.py tmplist ~/data/punct/vocab ./tmpseg
 
 mv ./tmpseg/$1 ./tmpseg/asr_out
-bash punc_many_files_with_lstm.sh `pwd`/tmpseg/ `pwd`/tmppunc/ False
+bash punc_many_files_with_lstm.sh `pwd`/tmpseg/ `pwd`/tmppunc/ False ../exp/all-proj1/model 0
 cat ./tmppunc/asr_out | tr -d ' ' > ${file}_punc
 
 rm -rf tmplist ./tmpseg ./tmppunc
