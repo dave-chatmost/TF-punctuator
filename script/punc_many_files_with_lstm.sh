@@ -5,9 +5,9 @@
 # Function: Punctuate listed text files with LSTM model.
 # NOTE: Execute in src directory.
 
-if [ $# != 5 ]; then
+if [ $# != 6 ]; then
   echo "Punctuate many files with LSTM."
-  echo "Usage: <in-dir> <out-dir> <get-post> <model-dir> <GPU-ids>"
+  echo "Usage: <in-dir> <out-dir> <get-post> <model-dir> <GPU-ids> <model-config>"
   echo "  get-post = True | False"
   exit 1;
 fi
@@ -19,7 +19,7 @@ OUTPUT_DIR=$2
 GET_POST=$3
 MODEL_DIR=$4
 GPU_IDS=$5
-MODEL=proj1
+MODEL=$6
 
 files=`cd $INPUT_DIR; ls *asr_out*`
 
