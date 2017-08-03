@@ -6,22 +6,26 @@ import numpy as np
 import tensorflow as tf
 
 
-def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, summary_writer=None, num_gpus=1):
+def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpus=1, get_post=False, debug=False):
     """Runs the model on the given data."""
     start_time = time.time()
     costs = 0.0
     iters = 0
     state = session.run(model.initial_state)
     predicts = []
+    posteriors = []
 
     fetches = {
         "cost": model.cost,
         "final_state": model.final_state,
-        "logits": model.logits,
-        "merged": model.merged
+        "predicts": model.predicts,
     }
     if eval_op is not None:
         fetches["eval_op"] = eval_op
+    if debug:
+        fetches["inputs"] = model.Dinputs
+        fetches["states"] = model.Dstates
+        fetches["outputs"] = model.Doutput
 
     logging.info("Epoch size: %d" % epoch_size) 
     for step in range(epoch_size):
@@ -34,8 +38,26 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, summary
         cost = vals["cost"]
         state = vals["final_state"]
         if eval_op is None:
-            predict = vals["logits"]
+            if debug:
+                # print each layer's output
+                print(np.array(vals["inputs"]).shape)
+                for layer_c, layer_h in vals["states"][0]:
+                    print(np.array(layer_c).shape)
+                    print(np.array(layer_h).shape)
+                print(np.array(vals["outputs"]).shape)
+                print(np.array(vals["predicts"]).shape)
+                print(vals["inputs"])
+                for layer_c, layer_h in vals["states"][0]:
+                    print(layer_c)
+                    print(layer_h)
+                print(vals["outputs"])
+                print(vals["predicts"])
+            # Keep in mind, when eval, num_steps=1, batch_size>=1
+            predict = vals["predicts"]
             predicts.extend(np.argmax(predict, 1).tolist())
+            if get_post:
+                for e in predict:
+                    posteriors.append(e.tolist())
 
         costs += cost
         iters += model.num_steps
@@ -47,16 +69,16 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, summary
             logging.info("%.3f perplexity: %.3f speed: %.0f wps" %
                   (step * 1.0 / epoch_size, np.exp(costs / iters),
                    num_gpus * iters * model.batch_size / (time.time() - start_time)))
-        merged = vals["merged"]
-        if summary_writer:
-            summary_writer.add_summary(merged, step)
 
-    if eval_op is None:
+    if eval_op is None and not get_post:
         # Make the predicts right format
         final_predicts = np.concatenate(
             np.array(predicts).reshape([-1, model.batch_size]).T,
             axis=0).tolist()
         return np.exp(costs / iters), final_predicts
+    elif get_post:
+        # Keep in mind, when get_post, num_steps=1, batch_size=1
+        return np.exp(costs / iters), posteriors
     else:
         return np.exp(costs / iters)
 
@@ -64,7 +86,7 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, summary
 class LSTMModel(object):
     """The Punctuation Prediction LSTM Model."""
 
-    def __init__(self, input_batch, label_batch, is_training, config):
+    def __init__(self, input_batch, label_batch, mask_batch, is_training, config):
         self.batch_size = batch_size = config.batch_size
         self.num_steps = num_steps = config.num_steps
 
@@ -76,13 +98,10 @@ class LSTMModel(object):
 
         # Set LSTM cell
         def lstm_cell():
-            if 'reuse' in inspect.getargspec(
-                    tf.contrib.rnn.BasicLSTMCell.__init__).args:
-                return tf.contrib.rnn.LSTMCell(
-                    hidden_size, use_peepholes=True, num_proj=num_proj,
-                    forget_bias=0.0, state_is_tuple=True,
-                    reuse=tf.get_variable_scope().reuse)
-
+            return tf.contrib.rnn.LSTMCell(
+                hidden_size, use_peepholes=True, num_proj=num_proj,
+                forget_bias=0.0, state_is_tuple=True,
+                reuse=tf.get_variable_scope().reuse)
         attn_cell = lstm_cell
         if is_training and config.keep_prob < 1:
             def attn_cell():
@@ -99,40 +118,52 @@ class LSTMModel(object):
             embedding = tf.get_variable(
                 "embedding", [vocab_size, embedding_size], dtype=tf.float32)
             inputs = tf.nn.embedding_lookup(embedding, input_batch)
+        self.Dinputs = inputs
         
         if is_training and config.keep_prob < 1:
             inputs = tf.nn.dropout(inputs, config.keep_prob)
 
         # Define output
-        #outputs = []
+        outputs = []
         state = self._initial_state
+        mask_batch = tf.cast(mask_batch, tf.float32)
+
+        def reset_state_by_mask(states, mask):
+            state_variables = []
+            for state_c, state_h in states:
+                state_variables.append(tf.contrib.rnn.LSTMStateTuple(
+                    tf.transpose(tf.transpose(state_c) * mask),
+                    tf.transpose(tf.transpose(state_h) * mask)))
+            return tuple(state_variables)
+
+        self.Dstates = []
+
         with tf.variable_scope("RNN"):
-            outputs, state = tf.nn.dynamic_rnn(cell=cell, inputs=inputs, initial_state=state, dtype=tf.float32)
-            #for time_step in range(num_steps):
-            #    if time_step > 0: tf.get_variable_scope().reuse_variables()
-            #    (cell_output, state) = cell(inputs[:, time_step, :], state)
-            #    outputs.append(cell_output)
+            for time_step in range(num_steps):
+                state = reset_state_by_mask(state, mask_batch[:, time_step])
+                if time_step > 0: tf.get_variable_scope().reuse_variables()
+                (cell_output, state) = cell(inputs[:, time_step, :], state)
+                outputs.append(cell_output)
+                self.Dstates.append(state)
 
         if num_proj is not None:
             hidden_size = num_proj
 
-        output = tf.reshape(outputs, [-1, hidden_size])
-        #output = tf.reshape(tf.concat(outputs, 1), [-1, hidden_size])
+        output = tf.reshape(tf.concat(outputs, 1), [-1, hidden_size])
+        self.Doutput = output
+
         softmax_w = tf.get_variable(
             "softmax_w", [hidden_size, punc_size], dtype=tf.float32)
         softmax_b = tf.get_variable(
             "softmax_b", [punc_size], dtype=tf.float32)
         logits = tf.matmul(output, softmax_w) + softmax_b
-        self._logits = tf.nn.softmax(logits)
+        self._predicts = tf.nn.softmax(logits)
         loss = tf.contrib.legacy_seq2seq.sequence_loss_by_example(
             [logits],
             [tf.reshape(label_batch, [-1])],
             [tf.ones([batch_size * num_steps], dtype=tf.float32)])
         self._cost = cost = tf.reduce_sum(loss) / batch_size
         self._final_state = state
-
-        tf.summary.scalar("cross_entropy", cost)
-        self._merged = tf.summary.merge_all()
 
         if not is_training:
             return
@@ -175,12 +206,8 @@ class LSTMModel(object):
         return self._train_op
 
     @property
-    def logits(self):
-        return self._logits
-
-    @property
-    def merged(self):
-        return self._merged
+    def predicts(self):
+        return self._predicts
 
     @property
     def grads(self):

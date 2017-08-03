@@ -43,12 +43,12 @@ def evaluate():
         initializer = tf.random_uniform_initializer(
             -config.init_scale, config.init_scale)
 
-        input_batch, label_batch = punc_input.eval_inputs(FLAGS.data_path + "/test.pkl",
+        input_batch, label_batch, mask_batch = punc_input.eval_inputs(FLAGS.data_path + "/test.pkl",
                                                           batch_size=config.batch_size)
 
         with tf.variable_scope("Model", reuse=None, initializer=initializer):
             mtest = LSTMModel(input_batch=input_batch, label_batch=label_batch,
-                              is_training=False, config=config)
+                              mask_batch=mask_batch, is_training=False, config=config)
 
         sv = tf.train.Supervisor()
         with sv.managed_session() as session:
@@ -66,7 +66,7 @@ def evaluate():
                                                    config.batch_size, config.num_steps,
                                                    EXAMPLES_PER_FILE=1)
 
-            test_perplexity, predicts = run_epoch(session, mtest, verbose=True, epoch_size=epoch_size)
+            test_perplexity, predicts = run_epoch(session, mtest, verbose=True, epoch_size=epoch_size, debug=True)
             logging.info("Test Perplexity: %.3f" % test_perplexity)
 
         logging.info("predicts' length = {}".format(len(predicts)))

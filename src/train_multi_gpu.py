@@ -23,9 +23,6 @@ flags.DEFINE_string("save_path", None,
 flags.DEFINE_string("log", "log",
     "Log filename."
 )
-flags.DEFINE_string("tblog", "tblog",
-    "Tensorboard log dir"
-)
 tf.app.flags.DEFINE_integer('num_gpus', 1,
                             """How many GPUs to use."""
 )
@@ -79,13 +76,14 @@ def train():
     """ Train Punctuator for a number of epochs."""
     config = get_config(FLAGS.model)
     with tf.Graph().as_default(), tf.device('/cpu:0'):
-        epoch_size = punc_input.get_epoch_size(FLAGS.data_path + "/data/train.pkl",
+        epoch_size = punc_input.get_epoch_size(FLAGS.data_path + "/train.pkl",
                                                config.batch_size, config.num_steps)
         epoch_size = epoch_size // FLAGS.num_gpus
         global_step = tf.get_variable(
             'global_step', [],
             initializer=tf.constant_initializer(0), trainable=False, dtype=tf.int32)
         lr = tf.Variable(0.0, trainable=False)
+        tf.summary.scalar("Learning_Rate", lr)
         opt = tf.train.GradientDescentOptimizer(lr)
         new_lr = tf.placeholder(tf.float32, shape=[], name="new_learning_rate")
         lr_update = tf.assign(lr, new_lr)
@@ -95,9 +93,10 @@ def train():
         initializer = tf.random_uniform_initializer(
             -config.init_scale, config.init_scale)
 
-        input_batch, label_batch, files = punc_input.inputs(os.path.join(FLAGS.data_path, "data/train"),
-                                                            num_steps=config.num_steps,
-                                                            batch_size=config.batch_size)
+        input_batch, label_batch, mask_batch, files = punc_input.inputs(
+            os.path.join(FLAGS.data_path, "train"),
+            num_steps=config.num_steps,
+            batch_size=config.batch_size)
 
         tower_grads = []
         with tf.variable_scope("Model", reuse=None, initializer=initializer):
@@ -105,12 +104,12 @@ def train():
                 with tf.device('/gpu:%d' % i):
                     with tf.name_scope('gpu_%d' % i) as scope:
                         m = LSTMModel(input_batch=input_batch, label_batch=label_batch,
-                                      is_training=True, config=config)
+                                      mask_batch=mask_batch, is_training=True, config=config)
                         loss = m.cost
                         tf.get_variable_scope().reuse_variables()
                         grads = opt.compute_gradients(loss)
                         tower_grads.append(grads)
-                        #tf.summary.scalar("Training Loss", m.cost)
+                        tf.summary.scalar("Training_Loss", m.cost)
 
         with tf.device('/gpu:0'):
             grads_and_tvars = average_gradients(tower_grads)
@@ -132,17 +131,15 @@ def train():
 
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=session, coord=coord)
-            summary_writer = tf.summary.FileWriter(FLAGS.tblog, session.graph)
             for i in range(config.max_max_epoch):
                 lr_decay = config.lr_decay ** max(i + 1 - config.max_epoch, 0.0)
                 assign_lr(session, config.learning_rate * lr_decay)
                 logging.info("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(lr)))
 
                 train_perplexity = run_epoch(session, m, eval_op=train_op, verbose=True,
-                                             epoch_size=epoch_size, summary_writer=summary_writer, 
+                                             epoch_size=epoch_size,
                                              num_gpus=FLAGS.num_gpus)
                 logging.info("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
-            summary_writer.close()
 
             coord.request_stop()
             coord.join(threads)
@@ -157,9 +154,6 @@ def main(argv=None):
     if tf.gfile.Exists(FLAGS.save_path):
         tf.gfile.DeleteRecursively(FLAGS.save_path)
     tf.gfile.MakeDirs(FLAGS.save_path)
-    if tf.gfile.Exists(FLAGS.tblog):
-        tf.gfile.DeleteRecursively(FLAGS.tblog)
-    tf.gfile.MakeDirs(FLAGS.tblog)
     train()
 
 
