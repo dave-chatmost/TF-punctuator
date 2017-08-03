@@ -90,9 +90,11 @@ class LSTMModel(object):
             def attn_cell():
                 return tf.contrib.rnn.DropoutWrapper(
                     lstm_cell(), output_keep_prob=config.keep_prob)
-        cell = tf.contrib.rnn.MultiRNNCell(
-            [attn_cell() for _ in range(config.num_layers)],
-            state_is_tuple=True)
+        # cell = tf.contrib.rnn.MultiRNNCell(
+        #     [attn_cell() for _ in range(config.num_layers)],
+        #     state_is_tuple=True)
+        cells_fw = [attn_cell() for _ in range(config.num_layers)]
+        cells_bw = [attn_cell() for _ in range(config.num_layers)]
         
         # Embedding part
         with tf.device("/cpu:0"):
@@ -103,18 +105,25 @@ class LSTMModel(object):
             inputs = tf.nn.dropout(inputs, config.keep_prob)
 
         # Automatically reset state in each batch
-        with tf.variable_scope("RNN"):
-            outputs, state = tf.nn.dynamic_rnn(cell=cell,
-                                               inputs=inputs,
-                                               sequence_length=seq_len,
-                                               dtype=tf.float32)
+        with tf.variable_scope("BRNN"):
+            # outputs, state = tf.nn.dynamic_rnn(cell=cell,
+            #                                    inputs=inputs,
+            #                                    sequence_length=seq_len,
+            #                                    dtype=tf.float32)
+            outputs, _, _ = tf.contrib.rnn.stack_bidirectional_dynamic_rnn(
+                cells_fw=cells_fw, 
+                cells_bw=cells_bw,
+                inputs=inputs,
+                sequence_length=seq_len,
+                dtype=tf.float32)
+            
 
         if num_proj is not None:
             hidden_size = num_proj
 
-        output = tf.reshape(outputs, [-1, hidden_size])
+        output = tf.reshape(outputs, [-1, hidden_size*2])
         softmax_w = tf.get_variable(
-            "softmax_w", [hidden_size, punc_size], dtype=tf.float32)
+            "softmax_w", [hidden_size*2, punc_size], dtype=tf.float32)
         softmax_b = tf.get_variable(
             "softmax_b", [punc_size], dtype=tf.float32)
         logits = tf.matmul(output, softmax_w) + softmax_b
