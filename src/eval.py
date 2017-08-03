@@ -66,7 +66,7 @@ def evaluate():
                                                    config.batch_size, config.num_steps,
                                                    EXAMPLES_PER_FILE=1)
 
-            test_perplexity, predicts = run_epoch(session, mtest, verbose=True, epoch_size=epoch_size)
+            test_perplexity, predicts = run_epoch(session, mtest, verbose=True, epoch_size=epoch_size, debug=True)
             logging.info("Test Perplexity: %.3f" % test_perplexity)
 
         logging.info("predicts' length = {}".format(len(predicts)))
