@@ -134,7 +134,7 @@ class LSTMModel(object):
             labels=tf.reshape(label_batch, [-1])
         )
         masked_loss = mask_flat * loss
-        self._cost = cost = tf.reduce_sum(loss) / tf.reduce_sum(mask_flat)
+        self._cost = cost = tf.reduce_sum(masked_loss) / tf.reduce_sum(mask_flat)
 
         if not is_training:
             return
