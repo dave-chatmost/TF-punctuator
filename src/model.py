@@ -39,6 +39,8 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpu
         state = vals["final_state"]
         if eval_op is None:
             if debug:
+                WIDTH = 10
+                np.set_printoptions(threshold=np.nan)
                 # print each layer's output
                 print(np.array(vals["inputs"]).shape)
                 for layer_c, layer_h in vals["states"][0]:
@@ -46,12 +48,19 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpu
                     print(np.array(layer_h).shape)
                 print(np.array(vals["outputs"]).shape)
                 print(np.array(vals["predicts"]).shape)
-                print(vals["inputs"])
+                print("embeeding output (x_t) :")
+                print(vals["inputs"][0][0][:WIDTH])
+                i = 1
                 for layer_c, layer_h in vals["states"][0]:
-                    print(layer_c)
-                    print(layer_h)
-                print(vals["outputs"])
-                print(vals["predicts"])
+                    print("lstm layer %d cell output (c_t) :" % i)
+                    print(layer_c[0][:WIDTH])
+                    print("lstm layer %d projection output (m_t) :" % i)
+                    print(layer_h[0][:WIDTH])
+                    i += 1
+                print("before softmax output: ")
+                print(vals["outputs"][0][:WIDTH])
+                print("softmax output (y_t) : ")
+                print(vals["predicts"][0][:WIDTH])
             # Keep in mind, when eval, num_steps=1, batch_size>=1
             predict = vals["predicts"]
             predicts.extend(np.argmax(predict, 1).tolist())
