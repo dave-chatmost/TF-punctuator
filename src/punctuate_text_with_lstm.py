@@ -75,7 +75,7 @@ def get_predicts(inputs, outputs, masks, get_post=False):
             epoch_size = len(inputs) #// config.batch_size
 
             test_perplexity, predicts = run_epoch(session, mtest, verbose=True, epoch_size=epoch_size,
-                                                  get_post=get_post)
+                                                  get_post=get_post, debug=True)
             logging.info("Test Perplexity: %.3f" % test_perplexity)
         
         return predicts
