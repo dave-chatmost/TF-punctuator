@@ -108,18 +108,23 @@ def eval_inputs(data_dir, batch_size=1, inputs=None, outputs=None):
         eval = np.load(data_dir)
         eval_inputs = eval["inputs"]
         eval_labels = eval["outputs"]
+        eval_masks = eval["masks"]
     else:
         eval_inputs = inputs
         eval_labels = outputs
+        eval_masks = masks
 
     eval_inputs = tf.convert_to_tensor(eval_inputs, name="eval_inputs", dtype=tf.int32)
     eval_labels = tf.convert_to_tensor(eval_labels, name="eval_labels", dtype=tf.int32)
+    eval_masks = tf.convert_to_tensor(eval_masks, name="eval_masks", dtype=tf.int32)
 
     data_len = tf.size(eval_inputs)
     batch_len = data_len // batch_size
     inputs_data = tf.reshape(eval_inputs[0: batch_size * batch_len],
                              [batch_size, batch_len])
     labels_data = tf.reshape(eval_labels[0: batch_size * batch_len],
+                             [batch_size, batch_len])
+    masks_data = tf.reshape(eval_masks[0: batch_size * batch_len],
                              [batch_size, batch_len])
 
     num_steps = 1 # Fixed when evaluate
@@ -137,7 +142,10 @@ def eval_inputs(data_dir, batch_size=1, inputs=None, outputs=None):
     label_batch = tf.strided_slice(labels_data, [0, i * num_steps],
                          [batch_size, (i + 1) * num_steps])
     label_batch.set_shape([batch_size, num_steps])
-    return input_batch, label_batch
+    mask_batch = tf.strided_slice(masks_data, [0, i * num_steps],
+                         [batch_size, (i + 1) * num_steps])
+    mask_batch.set_shape([batch_size, num_steps])
+    return input_batch, label_batch, mask_batch
 
 
 def get_epoch_size(pickle_file, batch_size, num_steps, EXAMPLES_PER_FILE=500000):

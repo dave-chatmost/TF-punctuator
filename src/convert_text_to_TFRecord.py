@@ -1,6 +1,7 @@
 import collections
 import os
 import pickle
+import sys
 
 import numpy as np
 import tensorflow as tf
@@ -8,6 +9,10 @@ import tensorflow as tf
 flags = tf.app.flags
 flags.DEFINE_string("data_dir", "../punc_data",
                     """Directory where exists text dataset""")
+flags.DEFINE_string("mode", "words",
+                    """words | sentences""")
+flags.DEFINE_string("out_dir", "data",
+                    """data | sentence_data""")
 FLAGS = flags.FLAGS
 
 class Conf(object):
@@ -31,7 +36,7 @@ def punctuation_index(punctuations, punctuation):
 
 def read_words(filename):
     with tf.gfile.GFile(filename, "r") as f:
-        return f.read().replace("\n", "<eos>").split()
+        return f.read().replace("\n", " ").split()
 
 
 def build_vocab(corpus, vocab_size, output_file):
@@ -57,27 +62,32 @@ def load_vocabulary(file_path):
     return vocabulary
 
 
-def words_to_ids(file_path, vocabulary, punctuations):
+def words_to_ids(file_path, vocabulary, punctuations, mode='train'):
+    # Add mode because there are some punctuations in the test file.
     inputs = []
     outputs = []
+    masks = []
     punctuation = " "
-    # print("[DEBUG]", punctuations)
     
     with open(file_path, 'r') as corpus:
         for line in corpus:
+            # There are some punctuations in the begin of a sentence
+            meet_first_word = False
+            masks.append(0)
             for token in line.split():
-                if token in punctuations:
+                if token in punctuations and meet_first_word and mode == 'train':
                     punctuation = token
                     continue
                 else:
+                    meet_first_word = True
+                    masks.append(1)
                     inputs.append(input_word_index(vocabulary, token))
                     outputs.append(punctuation_index(punctuations, punctuation))
                     punctuation = " "
-
-    inputs.append(input_word_index(vocabulary, "<END>"))
-    outputs.append(punctuation_index(punctuations, punctuation))
-    return inputs, outputs
-
+            inputs.append(input_word_index(vocabulary, "<END>"))
+            outputs.append(punctuation_index(punctuations, punctuation))
+            punctuation = " "
+    return inputs, outputs, masks
 
 def sentences_to_ids(file_path, vocabulary, punctuations):
     inputs = []
@@ -139,11 +149,12 @@ def convert_file_according_words(file_path, vocabulary, punctuations, output_pat
         tf.gfile.DeleteRecursively(output_path)
     tf.gfile.MakeDirs(output_path)
 
-    inputs, outputs = words_to_ids(file_path, vocabulary, punctuations)
+    inputs, outputs, masks = words_to_ids(file_path, vocabulary, punctuations)
     print("Length of inputs is " + str(len(inputs)))
     assert len(inputs) == len(outputs)
+    assert len(inputs) == len(masks)
 
-    save_to_pickle(inputs, outputs, vocabulary, punctuations, output_path)
+    save_to_pickle(inputs, outputs, masks, vocabulary, punctuations, output_path)
 
     EXAMPLES_PER_FILE = 500000 #TODO: Make it an parameter
     NUM_FILES = int(np.floor(len(inputs)/EXAMPLES_PER_FILE))
@@ -152,10 +163,12 @@ def convert_file_according_words(file_path, vocabulary, punctuations, output_pat
         writer = tf.python_io.TFRecordWriter(filename)
         input = inputs[i*EXAMPLES_PER_FILE : (i+1)*EXAMPLES_PER_FILE]
         label = outputs[i*EXAMPLES_PER_FILE : (i+1)*EXAMPLES_PER_FILE]
+        mask = masks[i*EXAMPLES_PER_FILE : (i+1)*EXAMPLES_PER_FILE]
         print("Writing " + filename + " with length of " + str(len(input)) + " data.")
         example = tf.train.Example(features=tf.train.Features(feature={
             "inputs": _int64_feature(input),
-            "labels": _int64_feature(label)}))
+            "labels": _int64_feature(label),
+            "masks": _int64_feature(mask)}))
         writer.write(example.SerializeToString())
         writer.close()
     print("Converting Successfully.")
@@ -218,8 +231,6 @@ def convert_text_to_tfrecord(raw_data_path, conf, mode="words", output_dir="data
     print("Converting text file according %s..." % mode)
     if mode == "words":
         convert_file = convert_file_according_words
-    elif mode == "sentences":
-        convert_file = convert_file_according_sentences
 
     convert_file(train_data, vocabulary, punctuations,
                 os.path.join(data_path, "train"))
@@ -230,7 +241,7 @@ def convert_text_to_tfrecord(raw_data_path, conf, mode="words", output_dir="data
 
 
 def main():
-    convert_text_to_tfrecord(FLAGS.data_dir, conf=Conf(), mode="sentences", output_dir="sentence_data")
+    convert_text_to_tfrecord(FLAGS.data_dir, conf=Conf(), mode=FLAGS.mode, output_dir=FLAGS.out_dir)
 
 
 if __name__ == "__main__":

@@ -6,12 +6,13 @@ import numpy as np
 import tensorflow as tf
 
 
-def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpus=1):
+def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpus=1, get_post=False, debug=False):
     """Runs the model on the given data."""
     start_time = time.time()
     all_words = 0
     costs = 0.0
     predicts = []
+    posteriors = []
 
     fetches = {
         "cost": model.cost,
@@ -21,6 +22,10 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpu
     }
     if eval_op is not None:
         fetches["eval_op"] = eval_op
+    if debug:
+        fetches["inputs"] = model.Dinputs
+        fetches["states"] = model.Dstates
+        fetches["outputs"] = model.Doutput
 
     logging.info("Epoch size: %d" % epoch_size) 
     for step in range(epoch_size):
@@ -29,21 +34,48 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpu
         mask = vals["mask"]
         if eval_op is None:
             predict = vals["predict"]
-            if step > 497:
-                #for i in range(len(mask)):
-                #    print(mask[i])
-                print(np.sum(mask, axis=1))
-                print(vals["seqlen"])
+            # if step > 497:
+            #     #for i in range(len(mask)):
+            #     #    print(mask[i])
+            #     print(np.sum(mask, axis=1))
+            #     print(vals["seqlen"])
             mask = np.array(np.round(mask), dtype=np.int32)
             shape = mask.shape
-            if step > 10 and step < 20:
-                print(predict)
-                #print(np.argmax(predict, 1))
+            # if step > 10 and step < 20:
+            #     print(predict)
+            #     print(np.argmax(predict, 1))
             predict = np.reshape(np.argmax(predict, 1), shape).tolist()
             mask = np.sum(mask, axis=1).tolist()
             for i in range(shape[0]):
                 predicts.append(predict[i][:mask[i]])
             #predicts.extend(np.argmax(predict, 1).tolist())
+            if debug:
+                WIDTH = 10
+                np.set_printoptions(threshold=np.nan)
+                # print each layer's output
+                print(np.array(vals["inputs"]).shape)
+                for layer_c, layer_h in vals["states"][0]:
+                    print(np.array(layer_c).shape)
+                    print(np.array(layer_h).shape)
+                print(np.array(vals["outputs"]).shape)
+                print(np.array(vals["predict"]).shape)
+                print("embeeding output (x_t) :")
+                print(vals["inputs"][0][0][:WIDTH])
+                i = 1
+                for layer_c, layer_h in vals["states"][0]:
+                    print("lstm layer %d cell output (c_t) :" % i)
+                    print(layer_c[0][:WIDTH])
+                    print("lstm layer %d projection output (m_t) :" % i)
+                    print(layer_h[0][:WIDTH])
+                    i += 1
+                print("before softmax output: ")
+                print(vals["outputs"][0][:WIDTH])
+                print("softmax output (y_t) : ")
+                print(vals["predict"][0][:WIDTH])
+            # Keep in mind, when eval, num_steps=1, batch_size>=1
+            if get_post:
+                for e in predict:
+                    posteriors.append(e.tolist())
 
         costs += cost
         all_words += np.sum(mask)
@@ -56,12 +88,15 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpu
                   (step * 1.0 / epoch_size, np.exp(costs / step),
                    num_gpus * all_words / (time.time() - start_time)))
 
-    if eval_op is None:
+    if eval_op is None and not get_post:
         # Make the predicts right format
         #final_predicts = np.concatenate(
         #    np.array(predicts).reshape([-1, model.batch_size]).T,
         #    axis=0).tolist()
         return np.exp(costs / epoch_size), predicts
+    elif get_post:
+        # Keep in mind, when get_post, num_steps=1, batch_size=1
+        return np.exp(costs / iters), posteriors
     else:
         return np.exp(costs / epoch_size)
 
@@ -106,10 +141,6 @@ class LSTMModel(object):
 
         # Automatically reset state in each batch
         with tf.variable_scope("BRNN"):
-            # outputs, state = tf.nn.dynamic_rnn(cell=cell,
-            #                                    inputs=inputs,
-            #                                    sequence_length=seq_len,
-            #                                    dtype=tf.float32)
             outputs, _, _ = tf.contrib.rnn.stack_bidirectional_dynamic_rnn(
                 cells_fw=cells_fw, 
                 cells_bw=cells_bw,
@@ -117,11 +148,15 @@ class LSTMModel(object):
                 sequence_length=seq_len,
                 dtype=tf.float32)
             
-
+        self.Dinputs = inputs
+        self.Dstates = []
+        
         if num_proj is not None:
             hidden_size = num_proj
 
         output = tf.reshape(outputs, [-1, hidden_size*2])
+        self.Doutput = output
+
         softmax_w = tf.get_variable(
             "softmax_w", [hidden_size*2, punc_size], dtype=tf.float32)
         softmax_b = tf.get_variable(
