@@ -117,6 +117,8 @@ def sentences_to_ids(file_path, vocabulary, punctuations):
                 continue
             inputs[-1].append(input_word_index(vocabulary, "<END>"))
             outputs[-1].append(punctuation_index(punctuations, punctuation))
+    inputs = [ e for e in inputs if len(e) <= 200]
+    outputs = [ e for e in outputs if len(e) <= 200]
     return inputs, outputs
 
 
