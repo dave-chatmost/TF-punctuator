@@ -76,7 +76,7 @@ def inputs(data_dir, num_steps=20, batch_size=1, tfrecords_format="tfrecords-*",
         inputs = sequence["inputs"]
         labels = sequence["labels"]
 
-        num_threads = 1#6
+        num_threads = 16
         capacity = 10000 + 20 * batch_size
         batch = tf.train.batch(
             tensors=[inputs, labels, length],
