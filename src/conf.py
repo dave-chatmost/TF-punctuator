@@ -45,6 +45,10 @@ def get_config(model):
         return LargeConfig()
     elif model == "test":
         return TestConfig()
+    elif model == "layer1":
+        return Layer1Config()
+    elif model == "layer2":
+        return Layer2Config()
     else:
         raise ValueError("Invalid model: %s", model)
 
@@ -462,3 +466,40 @@ class TestConfig(object):
     batch_size = 20
     vocab_size = 10000
 
+
+class Layer1Config(object):
+    """Layer config. Compared with Proj1Config"""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 1
+    num_steps = 20
+    embedding_size = 256 
+    hidden_size = 1024 
+    num_proj = 256 # NOTE HERE
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 100000 + 2
+    punc_size = 5
+
+
+class Layer2Config(object):
+    """Layer config. Compared with Proj1Config"""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 2
+    num_steps = 20
+    embedding_size = 256 
+    hidden_size = 1024 
+    num_proj = 256 # NOTE HERE
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 100000 + 2
+    punc_size = 5
