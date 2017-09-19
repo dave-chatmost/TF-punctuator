@@ -87,6 +87,8 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpu
             logging.info("%.3f perplexity: %.3f speed: %.0f wps" %
                   (step * 1.0 / epoch_size, np.exp(costs / step),
                    num_gpus * all_words / (time.time() - start_time)))
+        if np.isnan(np.exp(costs / step)):
+            return np.exp(costs / step)
 
     if eval_op is None and not get_post:
         # Make the predicts right format
@@ -187,7 +189,8 @@ class LSTMModel(object):
         tvars = tf.trainable_variables()
         grads, _ = self._grads = tf.clip_by_global_norm(tf.gradients(cost, tvars),
                                           config.max_grad_norm)
-        optimizer = tf.train.GradientDescentOptimizer(self._lr)
+        # optimizer = tf.train.GradientDescentOptimizer(self._lr)
+        optimizer = tf.train.AdamOptimizer(self._lr)
         self._train_op = optimizer.apply_gradients(
             zip(grads, tvars),
             global_step=tf.contrib.framework.get_or_create_global_step())

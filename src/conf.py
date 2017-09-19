@@ -470,17 +470,17 @@ class TestConfig(object):
 class Layer1Config(object):
     """Layer config. Compared with Proj1Config"""
     init_scale = 0.1 # scale to initialize LSTM weights
-    learning_rate = 0.1
+    learning_rate = 0.001 #0.1
     max_grad_norm = 5
     num_layers = 1
     num_steps = 20
     embedding_size = 256 
     hidden_size = 1024 
     num_proj = 256 # NOTE HERE
-    max_epoch = 4
-    max_max_epoch = 7
+    max_epoch = 2
+    max_max_epoch = 10#7
     keep_prob = 1.0
-    lr_decay = 0.5
+    lr_decay = 0.8#0.5
     batch_size = 128 
     vocab_size = 100000 + 2
     punc_size = 5

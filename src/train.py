@@ -65,6 +65,9 @@ def train():
 
                 train_perplexity = run_epoch(session, m, eval_op=m.train_op, verbose=True,
                                              epoch_size=epoch_size)
+                if np.isnan(train_perplexity):
+                    logging.info("Perplexity is nan! now exit")
+                    break
                 logging.info("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
 
             coord.request_stop()
