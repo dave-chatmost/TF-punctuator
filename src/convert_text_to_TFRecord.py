@@ -21,7 +21,6 @@ class Conf(object):
     train_data = "train.txt" # relative path to raw_data_path
     valid_data = "valid.txt" # relative path to raw_data_path
     test_data = "test.txt" # relative path to raw_data_path
-    vocab_size = 100000 # will add 2 special symbols
 
 def get_punctuations(punct_vocab_file):
     with open(punct_vocab_file, 'r') as f:
@@ -141,7 +140,8 @@ def convert_text_to_tfrecord(raw_data_path, conf, mode="words", output_dir="data
     data_path = os.path.join(raw_data_path, output_dir)
 
     if not os.path.exists(vocab_file):
-        build_vocab(train_data, conf.vocab_size, vocab_file)
+        print("Please build vocab by tools/generate_vocab.py")
+        exit(0)
     vocabulary = load_vocabulary(vocab_file)
     punctuations = get_punctuations(punct_vocab_file)
 

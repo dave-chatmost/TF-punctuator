@@ -8,6 +8,7 @@ old_log
 nohup.out
 
 # data
+data
 ngram_test_data
 punc_data*
 data_test

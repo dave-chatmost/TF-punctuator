@@ -1,6 +1,10 @@
 def get_config(model):
     if model == "small":
         return SmallConfig()
+    elif model == "3wproj1":
+        return Vocab3WProj1Config()
+    elif model == "proj1-char":
+        return Proj1CharConfig()
     elif model == "small2":
         return Small2Config()
     elif model == "small3":
@@ -502,4 +506,40 @@ class Layer2Config(object):
     lr_decay = 0.5
     batch_size = 128 
     vocab_size = 100000 + 2
+    punc_size = 5
+
+class Proj1CharConfig(object):
+    """char LSTM config"""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 3
+    num_steps = 20
+    embedding_size = 256 
+    hidden_size = 1024 
+    num_proj = 256 # NOTE HERE
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 6731 + 2
+    punc_size = 5
+
+class Vocab3WProj1Config(object):
+    """3W vocab LSTM config"""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 3
+    num_steps = 20
+    embedding_size = 256 
+    hidden_size = 1024 
+    num_proj = 256 # NOTE HERE
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 30000 + 2
     punc_size = 5
