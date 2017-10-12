@@ -3,6 +3,10 @@ def get_config(model):
         return SmallConfig()
     elif model == "3wproj1":
         return Vocab3WProj1Config()
+    elif model == "3whid8":
+        return Vocab3WHidden8Config()
+    elif model == "3whid256":
+        return Vocab3WHidden256Config()
     elif model == "proj1-char":
         return Proj1CharConfig()
     elif model == "small2":
@@ -543,3 +547,40 @@ class Vocab3WProj1Config(object):
     batch_size = 128 
     vocab_size = 30000 + 2
     punc_size = 5
+
+class Vocab3WHidden8Config(object):
+    """Hidden config."""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 3
+    num_steps = 20
+    embedding_size = 256 # NOTE HERE
+    hidden_size = 512 # NOTE HERE
+    num_proj = 256
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 30000 + 2
+    punc_size = 5
+
+class Vocab3WHidden256Config(object):
+    """Hidden config."""
+    init_scale = 0.1 # scale to initialize LSTM weights
+    learning_rate = 0.1
+    max_grad_norm = 5
+    num_layers = 3
+    num_steps = 20
+    embedding_size = 256 # NOTE HERE
+    hidden_size = 256 # NOTE HERE
+    num_proj = 256
+    max_epoch = 4
+    max_max_epoch = 7
+    keep_prob = 1.0
+    lr_decay = 0.5
+    batch_size = 128 
+    vocab_size = 30000 + 2
+    punc_size = 5
+
