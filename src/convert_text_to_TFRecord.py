@@ -24,7 +24,7 @@ class Conf(object):
     vocab_size = 100000 # will add 2 special symbols
 
 def get_punctuations(punct_vocab_file):
-    with open(punct_vocab_file, 'r') as f:
+    with open(punct_vocab_file, 'r', encoding='utf-8') as f:
         punctuations = {w.strip('\n'): i for (i, w) in enumerate(f)}
     return punctuations
 
@@ -47,13 +47,13 @@ def build_vocab(corpus, vocab_size, output_file):
 
     words = list(zip(*count_pairs))[0][:vocab_size]
     # word_to_id = dict(zip(words, range(len(words))))
-    with open(output_file, "w") as vocab:
+    with open(output_file, "w", encoding='utf-8') as vocab:
         for i in range(len(words)):
             vocab.write(words[i] + "\n")
 
 
 def load_vocabulary(file_path):
-    with open(file_path, 'r') as vocab:
+    with open(file_path, 'r', encoding='utf-8') as vocab:
         vocabulary = {w.strip(): i for (i, w) in enumerate(vocab)}
     if "<unk>" not in vocabulary:
         vocabulary["<unk>"] = len(vocabulary)
@@ -69,7 +69,7 @@ def words_to_ids(file_path, vocabulary, punctuations, mode='train'):
     masks = []
     punctuation = " "
     
-    with open(file_path, 'r') as corpus:
+    with open(file_path, 'r', encoding='utf-8') as corpus:
         for line in corpus:
             # There are some punctuations in the begin of a sentence
             meet_first_word = False
@@ -93,7 +93,7 @@ def sentences_to_ids(file_path, vocabulary, punctuations):
     inputs = []
     outputs = []
     
-    with open(file_path, 'r') as corpus:
+    with open(file_path, 'r', encoding='utf-8') as corpus:
         for line in corpus:
             # Skip blank line
             if len(line.strip()) == 0:
@@ -231,6 +231,8 @@ def convert_text_to_tfrecord(raw_data_path, conf, mode="words", output_dir="data
     print("Converting text file according %s..." % mode)
     if mode == "words":
         convert_file = convert_file_according_words
+    elif mode == "sentences":
+        convert_file = convert_file_according_sentences
 
     convert_file(train_data, vocabulary, punctuations,
                 os.path.join(data_path, "train"))

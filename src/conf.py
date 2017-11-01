@@ -56,7 +56,7 @@ def get_config(model):
 class Proj1Config(object):
     """Projection config. Compared with Hidden7Config"""
     init_scale = 0.1 # scale to initialize LSTM weights
-    learning_rate = 0.1
+    learning_rate = 0.0001
     max_grad_norm = 5
     num_layers = 3
     num_steps = 20
