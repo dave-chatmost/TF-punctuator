@@ -5,9 +5,9 @@
 # Function: Punctuate listed text files with LSTM model.
 # NOTE: Execute in src directory.
 
-if [ $# != 6 ]; then
+if [ $# != 7 ]; then
   echo "Punctuate many files with LSTM."
-  echo "Usage: <in-dir> <out-dir> <get-post> <model-dir> <GPU-ids> <model-config>"
+  echo "Usage: <in-dir> <out-dir> <get-post> <model-dir> <GPU-ids> <model-config> <vocab>"
   echo "  get-post = True | False"
   exit 1;
 fi
@@ -20,6 +20,7 @@ GET_POST=$3
 MODEL_DIR=$4
 GPU_IDS=$5
 MODEL=$6
+VOCAB=$7
 
 files=`cd $INPUT_DIR; ls *asr_out*`
 
@@ -30,7 +31,7 @@ do
     echo "Processing $file"
     CUDA_VISIBLE_DEVICES=$GPU_IDS \
     python punctuate_text_with_lstm.py \
-        --vocabulary=../data/punc_data_head300W/vocab \
+        --vocabulary=$VOCAB \
         --punct_vocab=../data/punc_data_head300W/punct_vocab \
         --model=$MODEL --save_path=$MODEL_DIR \
         --log=log/${MODEL}_punc_$file \

@@ -30,11 +30,11 @@
 # bash compute_wer.sh ~/punc-test-workspace/data/TN_char/ ~/punc-test-workspace/online5gram/hyp_char/ asr_out
 
 
-hyp_dir=~/punc-test-workspace/h300W_lstm_hid8/hyp
-bash punc_many_files_with_lstm.sh ~/punc-test-workspace/data/TN $hyp_dir False ../exp/h300W-hid8/model 0 hid8
-mkdir ${hyp_dir}_char
-python ../tools/segment/charseg.py $hyp_dir ${hyp_dir}_char 
-bash compute_wer.sh ~/punc-test-workspace/data/TN_char ${hyp_dir}_char asr_out > ${hyp_dir%/*}/cer
+# hyp_dir=~/punc-test-workspace/h300W_lstm_hid8/hyp
+# bash punc_many_files_with_lstm.sh ~/punc-test-workspace/data/TN $hyp_dir False ../exp/h300W-hid8/model 0 hid8
+# mkdir ${hyp_dir}_char
+# python ../tools/segment/charseg.py $hyp_dir ${hyp_dir}_char 
+# bash compute_wer.sh ~/punc-test-workspace/data/TN_char ${hyp_dir}_char asr_out > ${hyp_dir%/*}/cer
 
 
 # hyp_dir=~/punc-test-workspace/h300W_lstm_hid9/hyp
@@ -42,3 +42,33 @@ bash compute_wer.sh ~/punc-test-workspace/data/TN_char ${hyp_dir}_char asr_out >
 # mkdir ${hyp_dir}_char
 # python ../tools/segment/charseg.py $hyp_dir ${hyp_dir}_char 
 # bash compute_wer.sh ~/punc-test-workspace/data/TN_char ${hyp_dir}_char asr_out > ${hyp_dir%/*}/cer
+
+# hyp_dir=~/punc-test-workspace/TR/h300W_lstm_hid8/hyp
+# bash punc_many_files_with_lstm.sh ~/punc-test-workspace/data/TN $hyp_dir False ../exp/h300W-hid8/model 0 hid8 ../data/punc_data_head300W/vocab
+# mkdir ${hyp_dir}_char
+# python ../tools/segment/charseg.py $hyp_dir ${hyp_dir}_char 
+# bash compute_wer.sh ~/punc-test-workspace/data/TN_char ${hyp_dir}_char asr_out > ${hyp_dir%/*}/cer
+
+# hyp_dir=~/punc-test-workspace/TR/h300W_lstm_v3w_proj1/hyp
+# bash punc_many_files_with_lstm.sh ~/punc-test-workspace/data/TN $hyp_dir False ../exp/vocab3W-h300W-proj1/model 0 3wproj1 ../data/punc_data_head300W_vocab3W/vocab
+# mkdir ${hyp_dir}_char
+# python ../tools/segment/charseg.py $hyp_dir ${hyp_dir}_char 
+# bash compute_wer.sh ~/punc-test-workspace/data/TN_char ${hyp_dir}_char asr_out > ${hyp_dir%/*}/cer
+# 
+# hyp_dir=~/punc-test-workspace/TR/h300W_lstm_v3w_hid8/hyp
+# bash punc_many_files_with_lstm.sh ~/punc-test-workspace/data/TN $hyp_dir False ../exp/vocab3W-h300W-hid8/model 0 3whid8 ../data/punc_data_head300W_vocab3W/vocab
+# mkdir ${hyp_dir}_char
+# python ../tools/segment/charseg.py $hyp_dir ${hyp_dir}_char 
+# bash compute_wer.sh ~/punc-test-workspace/data/TN_char ${hyp_dir}_char asr_out > ${hyp_dir%/*}/cer
+# 
+# hyp_dir=~/punc-test-workspace/TR/h300W_lstm_v3w_hid256/hyp
+# bash punc_many_files_with_lstm.sh ~/punc-test-workspace/data/TN $hyp_dir False ../exp/vocab3W-h300W-hid256/model 0 3whid256 ../data/punc_data_head300W_vocab3W/vocab
+# mkdir ${hyp_dir}_char
+# python ../tools/segment/charseg.py $hyp_dir ${hyp_dir}_char 
+# bash compute_wer.sh ~/punc-test-workspace/data/TN_char ${hyp_dir}_char asr_out > ${hyp_dir%/*}/cer
+
+hyp_dir=~/punc-test-workspace/TR/h300W_lstm_proj1/hyp
+bash punc_many_files_with_lstm.sh ~/punc-test-workspace/data/TN $hyp_dir False ../exp/h300W-proj1/model 0 proj1 ../data/punc_data_head300W/vocab
+mkdir ${hyp_dir}_char
+python ../tools/segment/charseg.py $hyp_dir ${hyp_dir}_char 
+bash compute_wer.sh ~/punc-test-workspace/data/TN_char ${hyp_dir}_char asr_out > ${hyp_dir%/*}/cer

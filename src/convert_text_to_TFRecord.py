@@ -23,7 +23,7 @@ class Conf(object):
     test_data = "test.txt" # relative path to raw_data_path
 
 def get_punctuations(punct_vocab_file):
-    with open(punct_vocab_file, 'r') as f:
+    with open(punct_vocab_file, 'r', encoding='utf8') as f:
         punctuations = {w.strip('\n'): i for (i, w) in enumerate(f)}
     return punctuations
 
@@ -46,13 +46,13 @@ def build_vocab(corpus, vocab_size, output_file):
 
     words = list(zip(*count_pairs))[0][:vocab_size]
     # word_to_id = dict(zip(words, range(len(words))))
-    with open(output_file, "w") as vocab:
+    with open(output_file, "w", encoding='utf8') as vocab:
         for i in range(len(words)):
             vocab.write(words[i] + "\n")
 
 
 def load_vocabulary(file_path):
-    with open(file_path, 'r') as vocab:
+    with open(file_path, 'r', encoding='utf8') as vocab:
         vocabulary = {w.strip(): i for (i, w) in enumerate(vocab)}
     if "<unk>" not in vocabulary:
         vocabulary["<unk>"] = len(vocabulary)
@@ -68,7 +68,7 @@ def words_to_ids(file_path, vocabulary, punctuations, mode='train'):
     masks = []
     punctuation = " "
     
-    with open(file_path, 'r') as corpus:
+    with open(file_path, 'r', encoding='utf8') as corpus:
         for line in corpus:
             # There are some punctuations in the begin of a sentence
             meet_first_word = False
