@@ -88,6 +88,48 @@ def words_to_ids(file_path, vocabulary, punctuations, mode='train'):
             punctuation = " "
     return inputs, outputs, masks
 
+def sentences_to_ids(file_path, vocabulary, punctuations):
+    inputs = []
+    outputs = []
+    
+    with open(file_path, 'r', encoding='utf-8') as corpus:
+        for line in corpus:
+            # Skip blank line
+            if len(line.strip()) == 0:
+                continue
+            punctuation = " "
+            inputs.append([])
+            outputs.append([])
+            meet_first_word = False
+            for token in line.split():
+                if token in punctuations and meet_first_word:
+                    punctuation = token
+                    # if the length of this sentence is bigger than 100, 
+                    # truncate this sentence to some short sentences.
+                    if len(inputs[-1]) >= 100:
+                        inputs[-1].append(input_word_index(vocabulary, "<END>"))
+                        outputs[-1].append(punctuation_index(punctuations, punctuation))
+                        punctuation = " "
+                        inputs.append([])
+                        outputs.append([])
+                        meet_first_word = False
+                    continue
+                else:
+                    meet_first_word = True
+                    inputs[-1].append(input_word_index(vocabulary, token))
+                    outputs[-1].append(punctuation_index(punctuations, punctuation))
+                    punctuation = " "
+            if len(inputs[-1]) <= 1 or len(inputs[-1]) >= 200:
+                #print("del\n", inputs[-1], '\n', outputs[-1])
+                del inputs[-1]
+                del outputs[-1]
+                continue
+            inputs[-1].append(input_word_index(vocabulary, "<END>"))
+            outputs[-1].append(punctuation_index(punctuations, punctuation))
+    inputs = [ e for e in inputs if len(e) <= 200]
+    outputs = [ e for e in outputs if len(e) <= 200]
+    return inputs, outputs
+
 
 def save_to_pickle(inputs, outputs, masks, vocabulary, punctuations, output_path):
     data = {"inputs": inputs, "outputs": outputs, "masks": masks,
@@ -96,6 +138,12 @@ def save_to_pickle(inputs, outputs, masks, vocabulary, punctuations, output_path
     with open(output_path+".pkl", 'wb') as output_file:
         pickle.dump(data, output_file, protocol=pickle.HIGHEST_PROTOCOL)
 
+def save_to_pickle_blstm(inputs, outputs, vocabulary, punctuations, output_path):
+    data = {"inputs": inputs, "outputs": outputs,
+            "vocabulary": vocabulary, "punctuations": punctuations}
+    
+    with open(output_path+".pkl", 'wb') as output_file:
+        pickle.dump(data, output_file, protocol=pickle.HIGHEST_PROTOCOL)
 
 def convert_file_according_words(file_path, vocabulary, punctuations, output_path):
     def _int64_feature(value):
@@ -131,6 +179,47 @@ def convert_file_according_words(file_path, vocabulary, punctuations, output_pat
     print("Converting Successfully.")
 
 
+def make_example(sequence, labels):
+    ex = tf.train.SequenceExample()
+    #print(len(sequence))
+    ex.context.feature["length"].int64_list.value.append(len(sequence))
+    fl_inputs = ex.feature_lists.feature_list["inputs"]
+    fl_labels = ex.feature_lists.feature_list["labels"]
+    for input, label in zip(sequence, labels):
+        fl_inputs.feature.add().int64_list.value.append(input)
+        fl_labels.feature.add().int64_list.value.append(label)
+    return ex
+
+
+def convert_file_according_sentences(file_path, vocabulary, punctuations, output_path):
+    print("Converting " + file_path)
+    if tf.gfile.Exists(output_path):
+        tf.gfile.DeleteRecursively(output_path)
+    tf.gfile.MakeDirs(output_path)
+
+    inputs, outputs = sentences_to_ids(file_path, vocabulary, punctuations)
+    inputs.sort(key=lambda x:len(x))
+    outputs.sort(key=lambda x:len(x))
+    print("Number of sentence is " + str(len(inputs)))
+    assert len(inputs) == len(outputs)
+
+    save_to_pickle_blstm(inputs, outputs, vocabulary, punctuations, output_path)
+
+    SENTENCES_PER_FILE = 5000
+    NUM_FILES = int(np.ceil(len(inputs)/SENTENCES_PER_FILE))
+    for i in range(NUM_FILES):
+        filename = os.path.join(output_path,  "tfrecords-%.5d-of-%.5d" % (i+1, NUM_FILES))
+        writer = tf.python_io.TFRecordWriter(filename)
+        seqs = inputs[i*SENTENCES_PER_FILE: (i+1)*SENTENCES_PER_FILE]
+        labs = outputs[i*SENTENCES_PER_FILE: (i+1)*SENTENCES_PER_FILE]
+        print("Writing " + filename + " with " + str(len(seqs)) + " sentences.")
+        for seq, label_seq in zip(seqs, labs):
+            ex = make_example(seq, label_seq)
+            writer.write(ex.SerializeToString())
+        writer.close()
+    print("Converting Successfully.")
+
+
 def convert_text_to_tfrecord(raw_data_path, conf, mode="words", output_dir="data"):
     vocab_file = os.path.join(raw_data_path, conf.vocabulary_file)
     punct_vocab_file = os.path.join(raw_data_path, conf.punct_vocab_file)
@@ -148,6 +237,8 @@ def convert_text_to_tfrecord(raw_data_path, conf, mode="words", output_dir="data
     print("Converting text file according %s..." % mode)
     if mode == "words":
         convert_file = convert_file_according_words
+    elif mode == "sentences":
+        convert_file = convert_file_according_sentences
 
     convert_file(train_data, vocabulary, punctuations,
                 os.path.join(data_path, "train"))
