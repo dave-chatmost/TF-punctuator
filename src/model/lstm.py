@@ -92,8 +92,8 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpu
         return np.exp(costs / iters)
 
 
-class LSTMModel(object):
-    """The Punctuation Prediction LSTM Model."""
+class LSTMPunctuator(object):
+    """LSTM Punctuation Prediction Model."""
 
     def __init__(self, input_batch, label_batch, mask_batch, is_training, config):
         self.batch_size = batch_size = config.batch_size

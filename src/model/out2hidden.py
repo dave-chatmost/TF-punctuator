@@ -92,8 +92,10 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpu
         return np.exp(costs / iters)
 
 
-class LSTMModelHidden(object):
-    """The Punctuation Prediction LSTM Model."""
+class LSTMPunctuator2(object):
+    """LSTM Punctuation Prediction Model.
+    The output of last time step is concatened to current first hidden layer.
+    """
 
     def __init__(self, input_batch, label_batch, mask_batch, is_training, config):
         self.batch_size = batch_size = config.batch_size

@@ -4,10 +4,10 @@ import os
 import numpy as np
 import tensorflow as tf
 
-import punc_input
+import punc_input_blstm
 import utils
 from conf import *
-from model import *
+from model import blstm
 
 flags = tf.flags
 
@@ -38,13 +38,13 @@ def train():
         initializer = tf.random_uniform_initializer(
             -config.init_scale, config.init_scale)
 
-        input_batch, label_batch, seq_len, files = punc_input.inputs(os.path.join(FLAGS.data_path, "train"),
+        input_batch, label_batch, seq_len, files = punc_input_blstm.inputs(os.path.join(FLAGS.data_path, "train"),
                                                             num_steps=config.num_steps,
                                                             batch_size=config.batch_size,
                                                             mode="sentences")
 
         with tf.variable_scope("Model", reuse=None, initializer=initializer):
-            m = LSTMModel(input_batch=input_batch, label_batch=label_batch,
+            m = blstm.BLSTMPunctuator(input_batch=input_batch, label_batch=label_batch,
                           seq_len=seq_len, is_training=True, config=config)
         tf.summary.scalar("Training_Loss", m.cost)
         tf.summary.scalar("Learning_Rate", m.lr)
@@ -56,14 +56,14 @@ def train():
 
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=session, coord=coord)
-            epoch_size = punc_input.get_epoch_size(FLAGS.data_path + "/train.pkl",
+            epoch_size = punc_input_blstm.get_epoch_size(FLAGS.data_path + "/train.pkl",
                                                    config.batch_size, config.num_steps)
             for i in range(config.max_max_epoch):
                 lr_decay = config.lr_decay ** max(i + 1 - config.max_epoch, 0.0)
                 m.assign_lr(session, config.learning_rate * lr_decay)
                 logging.info("Epoch: %d Learning rate: %f" % (i + 1, session.run(m.lr)))
 
-                train_perplexity = run_epoch(session, m, eval_op=m.train_op, verbose=True,
+                train_perplexity = blstm.run_epoch(session, m, eval_op=m.train_op, verbose=True,
                                              epoch_size=epoch_size)
                 if np.isnan(train_perplexity):
                     logging.info("Perplexity is nan! now exit")

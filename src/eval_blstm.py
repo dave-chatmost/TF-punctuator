@@ -6,10 +6,10 @@ import tensorflow as tf
 from sklearn.metrics import precision_recall_fscore_support as score
 from sklearn.metrics import accuracy_score
 
-import punc_input
+import punc_input_blstm
 import utils
 from conf import *
-from model import *
+from model import blstm
 
 flags = tf.flags
 
@@ -43,12 +43,12 @@ def evaluate():
         initializer = tf.random_uniform_initializer(
             -config.init_scale, config.init_scale)
 
-        input_batch, label_batch, seq_len, files = punc_input.inputs(os.path.join(FLAGS.data_path, "test"),
+        input_batch, label_batch, seq_len, files = punc_input_blstm.inputs(os.path.join(FLAGS.data_path, "test"),
                                                                      batch_size=config.batch_size, fileshuf=False,
                                                                      mode="sentences")
 
         with tf.variable_scope("Model", reuse=None, initializer=initializer):
-            mtest = LSTMModel(input_batch=input_batch, label_batch=label_batch,
+            mtest = blstm.BLSTMPunctuator(input_batch=input_batch, label_batch=label_batch,
                               seq_len=seq_len, is_training=False, config=config)
 
         sv = tf.train.Supervisor()
@@ -65,11 +65,11 @@ def evaluate():
                 return
 
             #epoch_size = 100
-            epoch_size = punc_input.get_epoch_size(FLAGS.data_path + "/test.pkl",
+            epoch_size = punc_input_blstm.get_epoch_size(FLAGS.data_path + "/test.pkl",
                                                    config.batch_size, config.num_steps,
                                                    EXAMPLES_PER_FILE=1)
 
-            test_perplexity, predicts = run_epoch(session, mtest, verbose=True, epoch_size=epoch_size, debug=False)
+            test_perplexity, predicts = blstm.run_epoch(session, mtest, verbose=True, epoch_size=epoch_size, debug=False)
             logging.info("Test Perplexity: %.3f" % test_perplexity)
 
         logging.info("predicts' length = {}".format(len(predicts)))

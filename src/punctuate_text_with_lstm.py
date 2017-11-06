@@ -9,10 +9,10 @@ import logging
 
 import tensorflow as tf
 
-import punc_input
+import punc_input_lstm
 import utils
 from conf import *
-from model import *
+from model import lstm
 from convert_text_to_TFRecord import *
 
 flags = tf.flags
@@ -50,14 +50,14 @@ def get_predicts(inputs, outputs, masks, get_post=False):
             -config.init_scale, config.init_scale)
 
         # Generate LSTM batch
-        input_batch, label_batch, mask_batch = punc_input.eval_inputs("",
+        input_batch, label_batch, mask_batch = punc_input_lstm.eval_inputs("",
                                                           batch_size=config.batch_size,
                                                           inputs=inputs,
                                                           outputs=outputs,
                                                           masks=masks)
 
         with tf.variable_scope("Model", reuse=None, initializer=initializer):
-            mtest = LSTMModel(input_batch=input_batch, label_batch=label_batch,
+            mtest = lstm.LSTMPunctuator(input_batch=input_batch, label_batch=label_batch,
                               mask_batch=mask_batch, is_training=False, config=config)
 
         sv = tf.train.Supervisor()
@@ -74,7 +74,7 @@ def get_predicts(inputs, outputs, masks, get_post=False):
 
             epoch_size = len(inputs) #// config.batch_size
 
-            test_perplexity, predicts = run_epoch(session, mtest, verbose=True, epoch_size=epoch_size,
+            test_perplexity, predicts = lstm.run_epoch(session, mtest, verbose=True, epoch_size=epoch_size,
                                                   get_post=get_post, debug=False)
             logging.info("Test Perplexity: %.3f" % test_perplexity)
         

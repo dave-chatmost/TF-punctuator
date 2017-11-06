@@ -12,7 +12,7 @@ import tensorflow as tf
 import punc_input_blstm
 import utils
 from conf import *
-from model import *
+from model import blstm
 from convert_text_to_TFRecord import *
 
 flags = tf.flags
@@ -81,7 +81,7 @@ def get_predicts(inputs, outputs, lens, get_post=False):
             lens=lens)
 
         with tf.variable_scope("Model", reuse=None, initializer=initializer):
-            mtest = LSTMModel(input_batch=input_batch, label_batch=label_batch,
+            mtest = blstm.BLSTMPunctuator(input_batch=input_batch, label_batch=label_batch,
                               seq_len=len_batch, is_training=False, config=config)
 
         sv = tf.train.Supervisor()
@@ -98,7 +98,7 @@ def get_predicts(inputs, outputs, lens, get_post=False):
 
             epoch_size = len(inputs) #// config.batch_size
 
-            test_perplexity, predicts = run_epoch(session, mtest, verbose=True, epoch_size=epoch_size,
+            test_perplexity, predicts = blstm.run_epoch(session, mtest, verbose=True, epoch_size=epoch_size,
                                                   get_post=get_post, debug=False)
             logging.info("Test Perplexity: %.3f" % test_perplexity)
         

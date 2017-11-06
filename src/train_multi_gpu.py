@@ -4,10 +4,10 @@ import os
 import numpy as np
 import tensorflow as tf
 
-import punc_input
+import punc_input_lstm
 import utils
 from conf import *
-from model import *
+from model import lstm
 
 flags = tf.flags
 
@@ -76,7 +76,7 @@ def train():
     """ Train Punctuator for a number of epochs."""
     config = get_config(FLAGS.model)
     with tf.Graph().as_default(), tf.device('/cpu:0'):
-        epoch_size = punc_input.get_epoch_size(FLAGS.data_path + "/train.pkl",
+        epoch_size = punc_input_lstm.get_epoch_size(FLAGS.data_path + "/train.pkl",
                                                config.batch_size, config.num_steps)
         epoch_size = epoch_size // FLAGS.num_gpus
         global_step = tf.get_variable(
@@ -93,7 +93,7 @@ def train():
         initializer = tf.random_uniform_initializer(
             -config.init_scale, config.init_scale)
 
-        input_batch, label_batch, mask_batch, files = punc_input.inputs(
+        input_batch, label_batch, mask_batch, files = punc_input_lstm.inputs(
             os.path.join(FLAGS.data_path, "train"),
             num_steps=config.num_steps,
             batch_size=config.batch_size)
@@ -103,7 +103,7 @@ def train():
             for i in range(FLAGS.num_gpus):
                 with tf.device('/gpu:%d' % i):
                     with tf.name_scope('gpu_%d' % i) as scope:
-                        m = LSTMModel(input_batch=input_batch, label_batch=label_batch,
+                        m = LSTMPunctuator(input_batch=input_batch, label_batch=label_batch,
                                       mask_batch=mask_batch, is_training=True, config=config)
                         loss = m.cost
                         tf.get_variable_scope().reuse_variables()
@@ -136,7 +136,7 @@ def train():
                 assign_lr(session, config.learning_rate * lr_decay)
                 logging.info("Epoch: %d Learning rate: %.3f" % (i + 1, session.run(lr)))
 
-                train_perplexity = run_epoch(session, m, eval_op=train_op, verbose=True,
+                train_perplexity = lstm.run_epoch(session, m, eval_op=train_op, verbose=True,
                                              epoch_size=epoch_size,
                                              num_gpus=FLAGS.num_gpus)
                 logging.info("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))

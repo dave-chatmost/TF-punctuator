@@ -6,10 +6,10 @@ import tensorflow as tf
 from sklearn.metrics import precision_recall_fscore_support as score
 from sklearn.metrics import accuracy_score
 
-import punc_input
+import punc_input_lstm
 import utils
 from conf import *
-from model import *
+from model import lstm
 
 flags = tf.flags
 
@@ -43,11 +43,11 @@ def evaluate():
         initializer = tf.random_uniform_initializer(
             -config.init_scale, config.init_scale)
 
-        input_batch, label_batch, mask_batch = punc_input.eval_inputs(FLAGS.data_path + "/test.pkl",
+        input_batch, label_batch, mask_batch = punc_input_lstm.eval_inputs(FLAGS.data_path + "/test.pkl",
                                                           batch_size=config.batch_size)
 
         with tf.variable_scope("Model", reuse=None, initializer=initializer):
-            mtest = LSTMModel(input_batch=input_batch, label_batch=label_batch,
+            mtest = lstm.LSTMPunctuator(input_batch=input_batch, label_batch=label_batch,
                               mask_batch=mask_batch, is_training=False, config=config)
 
         sv = tf.train.Supervisor()
@@ -62,11 +62,11 @@ def evaluate():
                 logging.info("No checkpoint file found")
                 return
 
-            epoch_size = punc_input.get_epoch_size(FLAGS.data_path + "/test.pkl",
+            epoch_size = punc_input_lstm.get_epoch_size(FLAGS.data_path + "/test.pkl",
                                                    config.batch_size, config.num_steps,
                                                    EXAMPLES_PER_FILE=1)
 
-            test_perplexity, predicts = run_epoch(session, mtest, verbose=True, epoch_size=epoch_size, debug=True)
+            test_perplexity, predicts = lstm.run_epoch(session, mtest, verbose=True, epoch_size=epoch_size, debug=True)
             logging.info("Test Perplexity: %.3f" % test_perplexity)
 
         logging.info("predicts' length = {}".format(len(predicts)))
