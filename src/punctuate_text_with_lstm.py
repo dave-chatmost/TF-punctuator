@@ -83,7 +83,7 @@ def get_predicts(inputs, outputs, masks, get_post=False):
 
 def write_punctuations(input_file, predicts, punct_vocab_reverse_map, output_file):
     i = 0
-    with open(input_file, 'r') as inpf, open(output_file, 'w') as outf:
+    with open(input_file, 'r', encoding='utf8') as inpf, open(output_file, 'w', encoding='utf8') as outf:
         for line in inpf:
             for word in line.split():
                 punctuation = punct_vocab_reverse_map[predicts[i]]
@@ -101,7 +101,7 @@ def write_punctuations(input_file, predicts, punct_vocab_reverse_map, output_fil
 def write_posteriors(input_file, posteriors, punct_vocab_reverse_map, output_file):
     punct_vocab_reverse_map[0]="*noevent*"
     i = 0
-    with open(input_file, 'r') as inpf, open(output_file, 'w') as outf:
+    with open(input_file, 'r', encoding='utf8') as inpf, open(output_file, 'w', encoding='utf8') as outf:
         for line in inpf:
             new_sentence = True
             for word in line.split():

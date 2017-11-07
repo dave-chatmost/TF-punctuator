@@ -64,15 +64,15 @@ def get_config(model):
 class Proj1Config(object):
     """Projection config. Compared with Hidden7Config"""
     init_scale = 0.1 # scale to initialize LSTM weights
-    learning_rate = 0.1
+    learning_rate = 0.0005
     max_grad_norm = 5
     num_layers = 3
     num_steps = 20
     embedding_size = 256 
     hidden_size = 1024 
     num_proj = 256 # NOTE HERE
-    max_epoch = 4
-    max_max_epoch = 7
+    max_epoch = 5
+    max_max_epoch = 10
     keep_prob = 1.0
     lr_decay = 0.5
     batch_size = 128 
