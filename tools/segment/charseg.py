@@ -6,13 +6,13 @@ import sys
 def char_seg(in_dir, out_dir):
     """
     For each file in in_dir, for each line of this file,
-    segment every Chinese char. NOTE: file in GBK format.
+    segment every Chinese char. NOTE: file in UTF8 format.
     """
     files = os.listdir(in_dir)
     for file in files:
         in_file = os.path.join(in_dir, file)
         out_file = os.path.join(out_dir, file)
-        with open(in_file, 'r', encoding='gbk', errors="ignore") as inf, open(out_file, 'w', encoding='gbk') as outf:
+        with open(in_file, 'r', encoding='utf8', errors="ignore") as inf, open(out_file, 'w', encoding='utf8') as outf:
             print("Processing", in_file)
             for line in inf:
                 if len(line) != 1: # blank line
