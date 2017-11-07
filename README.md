@@ -6,7 +6,12 @@
 ```
 ### Train
 ```bash
-CUDA_VISIBLE_DEVICES=7 nohup time python train.py --model=3wproj1 --data_path=../data/punc_data_all/data/ --save_path=../exp/vocab3W-h300W-proj1/model --log=log/vocab3W-h300W-proj1 &
+python train_lstm.py -h
+```
+```bash
+# New usage
+CUDA_VISIBLE_DEVICES=2 time nohup python train_lstm.py --train_data=../data/zh/head300W/data/ --vocab_size=100002 --embedding_size=256 --hidden_size=1024 --proj_size=256 --hidden_layers=3 --num_class=5 --batch_size=128 --epochs=7 --start_decay_epoch=4 --lr=0.0005 --save_folder=../exp/zh/temp/model --log=log/temp &
+CUDA_VISIBLE_DEVICES=7 nohup time python train_blstm.py --model=3wproj1 --data_path=../data/punc_data_all/data/ --save_path=../exp/vocab3W-h300W-proj1/model --log=log/vocab3W-h300W-proj1 &
 ```
 ### Eval
 ```bash

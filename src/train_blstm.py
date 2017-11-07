@@ -80,9 +80,9 @@ def train():
 
 
 def main(argv=None):
-    if tf.gfile.Exists(FLAGS.save_path):
-        tf.gfile.DeleteRecursively(FLAGS.save_path)
-    tf.gfile.MakeDirs(FLAGS.save_path)
+    # if tf.gfile.Exists(FLAGS.save_path):
+    #     tf.gfile.DeleteRecursively(FLAGS.save_path)
+    # tf.gfile.MakeDirs(FLAGS.save_path)
     train()
 
 

@@ -69,7 +69,7 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpu
                     posteriors.append(e.tolist())
 
         costs += cost
-        iters += model.num_steps
+        iters += model.bptt_step
 
         if epoch_size < 100:
             verbose = False
@@ -95,42 +95,44 @@ def run_epoch(session, model, eval_op=None, verbose=False, epoch_size=1, num_gpu
 class LSTMPunctuator(object):
     """LSTM Punctuation Prediction Model."""
 
-    def __init__(self, input_batch, label_batch, mask_batch, is_training, config):
-        self.batch_size = batch_size = config.batch_size
-        self.num_steps = num_steps = config.num_steps
+    def __init__(self, input_batch, label_batch, mask_batch, is_training,
+                 vocab_size, embedding_size, hidden_size, proj_size,
+                 hidden_layers, num_class, max_norm, batch_size, bptt_step):
+        self.vocab_size = vocab_size
+        self.embedding_size = embedding_size
+        self.hidden_size = hidden_size
+        self.proj_size = proj_size
+        self.hidden_layers = hidden_layers
+        self.num_class = num_class
+        self.max_norm = max_norm
+        self.batch_size = batch_size
+        self.bptt_step = bptt_step
 
-        embedding_size = config.embedding_size
-        hidden_size = config.hidden_size
-        num_proj = config.num_proj
-        vocab_size = config.vocab_size
-        punc_size = config.punc_size
+        # embedding_size = config.embedding_size
+        # hidden_size = config.hidden_size
+        # num_proj = config.num_proj
+        # vocab_size = config.vocab_size
+        # punc_size = config.punc_size
 
         # Set LSTM cell
         def lstm_cell():
             return tf.contrib.rnn.LSTMCell(
-                hidden_size, use_peepholes=True, num_proj=num_proj,
+                self.hidden_size, use_peepholes=True, num_proj=self.proj_size,
                 forget_bias=0.0, state_is_tuple=True,
                 reuse=tf.get_variable_scope().reuse)
         attn_cell = lstm_cell
-        if is_training and config.keep_prob < 1:
-            def attn_cell():
-                return tf.contrib.rnn.DropoutWrapper(
-                    lstm_cell(), output_keep_prob=config.keep_prob)
         cell = tf.contrib.rnn.MultiRNNCell(
-            [attn_cell() for _ in range(config.num_layers)],
+            [attn_cell() for _ in range(self.hidden_layers)],
             state_is_tuple=True)
         
-        self._initial_state = cell.zero_state(batch_size, tf.float32)
+        self._initial_state = cell.zero_state(self.batch_size, tf.float32)
 
         # Embedding part
         with tf.device("/cpu:0"):
             embedding = tf.get_variable(
-                "embedding", [vocab_size, embedding_size], dtype=tf.float32)
+                "embedding", [self.vocab_size, self.embedding_size], dtype=tf.float32)
             inputs = tf.nn.embedding_lookup(embedding, input_batch)
         self.Dinputs = inputs
-        
-        if is_training and config.keep_prob < 1:
-            inputs = tf.nn.dropout(inputs, config.keep_prob)
 
         # Define output
         outputs = []
@@ -148,30 +150,30 @@ class LSTMPunctuator(object):
         self.Dstates = []
 
         with tf.variable_scope("RNN"):
-            for time_step in range(num_steps):
+            for time_step in range(self.bptt_step):
                 state = reset_state_by_mask(state, mask_batch[:, time_step])
                 if time_step > 0: tf.get_variable_scope().reuse_variables()
                 (cell_output, state) = cell(inputs[:, time_step, :], state)
                 outputs.append(cell_output)
                 self.Dstates.append(state)
 
-        if num_proj is not None:
-            hidden_size = num_proj
+        if self.proj_size is not None:
+            hidden_size = self.proj_size
 
         output = tf.reshape(tf.concat(outputs, 1), [-1, hidden_size])
         self.Doutput = output
 
         softmax_w = tf.get_variable(
-            "softmax_w", [hidden_size, punc_size], dtype=tf.float32)
+            "softmax_w", [hidden_size, self.num_class], dtype=tf.float32)
         softmax_b = tf.get_variable(
-            "softmax_b", [punc_size], dtype=tf.float32)
+            "softmax_b", [self.num_class], dtype=tf.float32)
         logits = tf.matmul(output, softmax_w) + softmax_b
         self._predicts = tf.nn.softmax(logits)
         loss = tf.contrib.legacy_seq2seq.sequence_loss_by_example(
             [logits],
             [tf.reshape(label_batch, [-1])],
-            [tf.ones([batch_size * num_steps], dtype=tf.float32)])
-        self._cost = cost = tf.reduce_sum(loss) / batch_size
+            [tf.ones([self.batch_size * self.bptt_step], dtype=tf.float32)])
+        self._cost = cost = tf.reduce_sum(loss) / self.batch_size
         self._final_state = state
 
         if not is_training:
@@ -180,7 +182,7 @@ class LSTMPunctuator(object):
         self._lr = tf.Variable(0.0, trainable=False)
         tvars = tf.trainable_variables()
         grads, _ = self._grads = tf.clip_by_global_norm(tf.gradients(cost, tvars),
-                                          config.max_grad_norm)
+                                                        self.max_norm)
         optimizer = tf.train.GradientDescentOptimizer(self._lr)
         self._train_op = optimizer.apply_gradients(
             zip(grads, tvars),

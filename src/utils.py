@@ -2,8 +2,20 @@
 Useful utils for this project.
 """
 
+import errno
+import os
+
 import tensorflow as tf
 
+
+def makedir(dirpath):
+    try:
+        os.makedirs(dirpath)
+    except OSError as e:
+        if e.errno == errno.EEXIST:
+            print('Model Save directory already exists.')
+        else:
+            raise
 
 def count_number_trainable_params():
     """ 
@@ -29,4 +41,3 @@ def get_nb_params_shape(shape):
 
 def get_reverse_map(dictionary):
     return {v:k for k,v in dictionary.items()}
-
